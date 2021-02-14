@@ -114,8 +114,8 @@ void Camera::onMouse(int x, int y){
     mousePos_.x = x;
     mousePos_.y = y;
 
-    angleH_ += ( float )deltaX / 10.0f;
-    angleV_ += ( float )deltaY / 10.0f;
+    angleH_ += ( float )deltaX / 20.0f;
+    angleV_ += ( float )deltaY / 20.0f;
 
     if( 0 == deltaX ){
         if( x <= MARGIN )
@@ -144,10 +144,10 @@ void Camera::onRender(){
     bool shouldUpdate = false;
 
     if( onLeftEdge_ ){
-        angleH_ -= 1.1f;
+        angleH_ -= 2.0f;
         shouldUpdate = true;
     }else if( onRightEdge_ ){
-        angleH_ += 1.1f;
+        angleH_ += 2.0f;
         shouldUpdate = true;
     }
 

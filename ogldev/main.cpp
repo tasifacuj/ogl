@@ -163,7 +163,7 @@ private:
 int main( int argc, char** argv ){
     GLUTBackendInit( argc, argv );
 
-    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, false, "nice app" ) )
+    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, true, "nice app" ) )
         return -1;
 
     Main app;

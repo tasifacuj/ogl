@@ -20,7 +20,7 @@
 #define WINDOW_HEIGHT 1024
 
 
-
+// MESA_GLSL_VERSION_OVERRIDE=330 MESA_GL_VERSION_OVERRIDE=3.3 ./ogl
 
 class Main : public CallbackInterface{
 public: // == Main ==
@@ -46,7 +46,7 @@ public: // == Main ==
          plightEffect_->enable();
          plightEffect_->setTextureUnit( 0 );
          pMesh_ = std::make_unique< Mesh >();
-         return pMesh_->loadMesh( "/home/tez/projects/ogldev/Content/phoenix_ugv.md2" );
+         return pMesh_->loadMesh( "/home/tez/projects/ogldev/ogl/Content/phoenix_ugv.md2" );
 //        return pMesh_->loadMesh( "/home/tez/projects/ogldev/Content/box.obj" );
 
     }

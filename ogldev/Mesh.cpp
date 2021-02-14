@@ -124,11 +124,11 @@ bool Mesh::initMaterials(const aiScene *pScene, const std::string &filename){
             }
         }
 
-        if( !textures_[ idx ].get() ){
-            std::cout << "Load default texture for idx " << idx << " and path white.png"  << std::endl;
-            textures_[ idx ] = std::make_shared< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogldev/Content/white.png" );
-            rval = textures_[ idx ]->load();
-        }
+        // if( !textures_[ idx ].get() ){
+        //     std::cout << "Load default texture for idx " << idx << " and path white.png"  << std::endl;
+        //     textures_[ idx ] = std::make_shared< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogldev/Content/white.png" );
+        //     rval = textures_[ idx ]->load();
+        // }
     }
 
     return rval;

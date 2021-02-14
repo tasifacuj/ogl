@@ -10,20 +10,24 @@ set( SOURCES main.cpp
     GLUTBackend.cpp 
     Technique.cpp 
     LightTechnique.cpp 
-    Mesh.cpp )
+    Mesh.cpp
+    ShadowMapFBO.cpp
+    ShadowMapTechnique.cpp )
 
 set( HEADERS
- math_3d.h 
-Pipeline.hpp 
-Camera.hpp 
-Texture.hpp
-image_loader/stb_image.h 
-GlutBackEnd.hpp 
-CallbackInterface.hpp 
-Technique.hpp 
-LightTechnique.hpp 
-Utils.hpp 
-Mesh.hpp
+    math_3d.h 
+    Pipeline.hpp 
+    Camera.hpp 
+    Texture.hpp
+    image_loader/stb_image.h 
+    GlutBackEnd.hpp 
+    CallbackInterface.hpp 
+    Technique.hpp 
+    LightTechnique.hpp 
+    Utils.hpp 
+    Mesh.hpp
+    ShadowMapFBO.hpp
+    ShadowMapTechnique.hpp
 )
 
 set(CMAKE_CXX_STANDARD 14)

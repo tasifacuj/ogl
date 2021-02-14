@@ -15,6 +15,8 @@
 #include "GlutBackEnd.hpp"
 #include "Utils.hpp"
 #include "Mesh.hpp"
+#include "ShadowMapTechnique.hpp"
+#include "ShadowMapFBO.hpp"
 
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 1024
@@ -25,30 +27,49 @@
 class Main : public CallbackInterface{
 public: // == Main ==
     bool init(){
-        dirLight_.Color = Vector3f( 1.0f, 1.0f, 1.0f );
-        dirLight_.AmbientIntensity = 0.5f;
-        dirLight_.DiffuseIntensity = 0.0f;
-        dirLight_.Direction = Vector3f( 1.0f, 0.0f, 0.0f );
+        spotLight_.AmbientIntensity = 0.0f;
+        spotLight_.DiffuseIntensity = 0.9f;
+        spotLight_.Color = Vector3f( 1.0f, 1.0f, 1.0f );
+        spotLight_.Attenuation.Linear = 0.01f;
+        spotLight_.Position = Vector3f( -20.0f, 20.0f, 5.0f );
+        spotLight_.Direction = Vector3f( 1.0f, -1.0f, 0.0f );
+        spotLight_.CutOff = 20.0f;
 
-        Vector3f pos( -10.0f, 4.0f, 0.0f );
-        Vector3f target( 1.0f, 0.0f, 1.0f );
-//        Vector3f pos( 0.0f, 0.0f, -3.0f );
-//        Vector3f target( 0.0f, 0.0f, -1.0f );
-
-        Vector3f up( 0.0f, 1.0f, 0.0f );
-
-        pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up );
-        plightEffect_ = std::make_unique< LightTechnique >();
-
-        if( !plightEffect_->init() )
+        if( not shadowMapFBO_.init( WINDOW_WIDTH, WINDOW_HEIGHT ) )
             return false;
 
-         plightEffect_->enable();
-         plightEffect_->setTextureUnit( 0 );
-         pMesh_ = std::make_unique< Mesh >();
-         return pMesh_->loadMesh( "/home/tez/projects/ogldev/ogl/Content/phoenix_ugv.md2" );
-//        return pMesh_->loadMesh( "/home/tez/projects/ogldev/Content/box.obj" );
+        pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT );
+        plightEffect_ = std::make_unique< LightTechnique >();
 
+        if( !plightEffect_->init() ){
+            std::cerr << "Failed to setup light technique" << std::endl;
+            return false;
+        }
+
+        p_shadowMapTech_ = std::make_unique< ShadowMapTechnique >();
+
+        if( not p_shadowMapTech_->init() ){
+            std::cerr << "Failed to setup shadow map tech" << std::endl;
+            return false;
+        }
+
+        p_shadowMapTech_->enable();
+
+        p_quad_ = std::make_unique< Mesh >();
+
+        if( not p_quad_->loadMesh( "/home/tez/projects/ogldev/ogl/Content/quad.obj" ) ){
+            std::cerr << "Failed to load mesh quad.obj" << std::endl;
+            return false;
+        }
+
+        pMesh_ = std::make_unique< Mesh >();
+
+        if( not pMesh_->loadMesh( "/home/tez/projects/ogldev/ogl/Content/phoenix_ugv.md2" ) ){
+            std::cerr << "Failed to load mesh phoenix_ugv" << std::endl;
+            return false;
+        }
+
+        return true;
     }
 
     void run(){
@@ -57,26 +78,8 @@ public: // == Main ==
 public:// == CallbackInterface ==
     virtual void renderSceneCB() override{
         pCamera_->onRender();
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         scale_ += 0.1f;
 
-
-        Pipeline p;
-        p.scale( 0.1f, 0.1f, 0.1f );
-        p.rotate( 0.f, scale_, 0.f );
-        p.worldPos( 0.0f, 0.0f, 10.0f );
-        p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
-        p.setPerspectiveProjection( 60.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 100.0f );
-        plightEffect_->setWVP( p.getWVPTrans() );
-
-        const Matrix4f&  wt = p.getWorldTrans();
-        plightEffect_->setWorldMatrix( wt );
-        plightEffect_->setDirectionLight( dirLight_ );
-        plightEffect_->setEyeWorldPosition( pCamera_->getPos() );
-        plightEffect_->setMatSpecularIntensity( 0.0f );
-        plightEffect_->setMatSpecularPower( 0 );
-
-        pMesh_->render();
         glutSwapBuffers();
     }
 
@@ -108,56 +111,49 @@ public:// == CallbackInterface ==
     virtual void passiveMouseCB(int x, int y)override{
         pCamera_->onMouse( x, y );
     }
+
 private:
-    void calculateNormals( const unsigned* indices, unsigned indSize, Vertex* pVertices, unsigned vertexCount ){
-        for( unsigned idx = 0; idx < indSize; idx += 3 ){
-            unsigned idx0 = indices[ idx ];
-            unsigned idx1 = indices[ idx + 1 ];
-            unsigned idx2 = indices[ idx + 2 ];
+    void shadowMapPass(){
+        shadowMapFBO_.bindToWrite();
+        glClear( GL_DEPTH_BUFFER_BIT );
 
-            Vector3f v1 = pVertices[ idx1 ].Pos - pVertices[ idx0 ].Pos;
-            Vector3f v2 = pVertices[ idx2 ].Pos - pVertices[ idx0 ].Pos;
-            Vector3f normal = v1.cross( v2 );
-            normal.normalize();
+        Pipeline p;
+        p.scale( 0.2f, 0.2f, 0.2f );
+        p.rotate( 0.0f, scale_, 0.0f );
+        p.worldPos( 0.0f, 0.0f, 5.0f );
+        p.setCamera( spotLight_.Position, spotLight_.Direction, Vector3f( 0.0f, 1.0f, 0.0f ) );
+        p.setPerspectiveProjection( 60.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 50.0f );
+        p_shadowMapTech_->setWVP( p.getWVPTrans() );
+        pMesh_->render();
 
-            pVertices[ idx0 ].Normal += normal;
-            pVertices[ idx1 ].Normal += normal;
-            pVertices[ idx2 ].Normal += normal;
-        }
-
-        for( size_t idx = 0; idx < vertexCount; idx++ )
-            pVertices[ idx ].Normal.normalize();
+        glBindBuffer( GL_FRAMEBUFFER, 0 );
     }
 
-    void createVertexBuffer( const unsigned* pIndices, unsigned indexCount ){
-        Vertex vertices[] = {
-           Vertex(Vector3f(-1.0f, -1.0f, 0.5773f), Vector2f(0.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f) ),
-           Vertex(Vector3f(0.0f, -1.0f, -1.15475), Vector2f(0.5f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f)),
-           Vertex(Vector3f(1.0f, -1.0f, 0.5773f),  Vector2f(1.0f, 0.0f), Vector3f(0.0f, 0.0f, 0.0f)),
-           Vertex(Vector3f(0.0f, 1.0f, 0.0f),      Vector2f(0.5f, 1.0f), Vector3f(0.0f, 0.0f, 0.0f))
-        };
+    void renderPath(){
+        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+        p_shadowMapTech_->setTextureUnit( 0 );
+        shadowMapFBO_.bindToRead( GL_TEXTURE0 );
 
-        unsigned vertexCount = ARRAY_SIZE_IN_ELEMENTS( vertices );
-        calculateNormals( pIndices, indexCount, vertices, vertexCount );
-
-        glGenBuffers( 1, &vbo_ );
-        glBindBuffer( GL_ARRAY_BUFFER, vbo_ );
-        glBufferData( GL_ARRAY_BUFFER, sizeof( vertices ), vertices, GL_STATIC_DRAW );
-    }
-
-    void createIndexBuffer( const unsigned* indices, unsigned sizeInBytes ){
-        glGenBuffers( 1, &ibo_ );
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, ibo_ );
-        glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeInBytes, indices, GL_STATIC_DRAW );
+        Pipeline p;
+        p.scale( 5.0f, 5.0f, 5.0f );
+        p.worldPos( 0.0f, 0.0f, 10.0f );
+        p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
+        p.setPerspectiveProjection( 60.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 50.0f );
+        p_shadowMapTech_->setWVP( p.getWVPTrans() );
+        p_quad_->render();
     }
 private:
     GLuint                              vbo_{};
     GLuint                              ibo_{};
     std::unique_ptr< LightTechnique >   plightEffect_;
+    std::unique_ptr< ShadowMapTechnique > p_shadowMapTech_;
     std::unique_ptr< Mesh >             pMesh_;
     std::unique_ptr< Camera >           pCamera_;
     float                               scale_{};
     DirectionLight                      dirLight_;
+    std::unique_ptr< Mesh >             p_quad_;
+    ShadowMapFBO                        shadowMapFBO_;
+    SpotLight                           spotLight_;
 };
 
 int main( int argc, char** argv ){

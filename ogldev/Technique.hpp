@@ -7,6 +7,8 @@
 class Technique{
 public: // == TYPES ==
     using Shaders = std::list< GLuint >;
+public:
+    static constexpr int INVALID_UNIFORM_LOCATION = 0xFFFFFFFF;
 public: // == CTORS ==
     Technique() = default;
     virtual ~Technique();

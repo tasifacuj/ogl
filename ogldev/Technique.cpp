@@ -90,6 +90,10 @@ void Technique::enable(){
     glUseProgram( shaderProgram_ );
 }
 
+void Technique::useProgram(){
+    enable();
+}
+
 GLint Technique::getUniformLocation( const char* name ){
     GLint loc = glGetUniformLocation( shaderProgram_, name );
 

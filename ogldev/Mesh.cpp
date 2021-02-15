@@ -149,6 +149,8 @@ void Mesh::render(){
 
         if( materialIdx < textures_.size() && textures_[ materialIdx ] )
             textures_[ materialIdx ]->bind( GL_TEXTURE0 );
+         else
+            std::cout << "!!!there is no textures[" << materialIdx << "]" << std::endl;
 
         glDrawElements( GL_TRIANGLES, entries_[ idx ].NumIndices, GL_UNSIGNED_INT, 0 );
     }

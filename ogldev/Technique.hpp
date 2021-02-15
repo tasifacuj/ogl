@@ -14,7 +14,9 @@ public: // == CTORS ==
     virtual ~Technique();
 public: // == Technique ==
     virtual bool init();
+public:
     void enable();
+    void useProgram();
 protected:
     bool addShader( GLenum shaderType, const char* shaderText );
     bool finalize();

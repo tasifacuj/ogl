@@ -12,14 +12,17 @@ layout ( location = 1 ) in vec2 TexCoord;
 layout ( location = 2 ) in vec3 Normal;
 
 uniform mat4 gWVP;
+uniform mat4 gLightWVP;
 uniform mat4 gWorld;
 
+out vec4 LightSpacePos;
 out vec2 TexCoord0;
 out vec3 Normal0;
 out vec3 WorldPos0;
 
 void main(){
     gl_Position = gWVP * vec4( Position, 1.0 );
+    LightSpacePos = gLightWVP * vec4( Position, 1.0 );
     TexCoord0 = TexCoord;
     Normal0  = ( gWorld * vec4( Normal, 0.0 ) ).xyz;
     WorldPos0 = ( gWorld * vec4( Position, 1.0 ) ).xyz;
@@ -32,6 +35,7 @@ constexpr const char* pFS = R"||(
 const int MAX_POINT_LIGHTS = 2;
 const int MAX_SPOT_LIGHTS = 2;
 
+in vec4 LightSpacePos;
 in vec2 TexCoord0;
 in vec3 Normal0;
 in vec3 WorldPos0;
@@ -74,13 +78,29 @@ uniform PointLight          gPointLights[ MAX_POINT_LIGHTS ];
 uniform SpotLight           gSpotLights[ MAX_SPOT_LIGHTS ];
 
 uniform sampler2D           gSampler; // GL_TEXTURE0
+uniform sampler2D           gShadowMap;// GL_TEXTURE1??
 
-uniform float               gSpecularPower;
 uniform vec3                gEyeWorldPos;
 uniform float               gMatSpecularIntensity;
+uniform float               gSpecularPower;
 
 
-vec4 calc_light_internal( BaseLight light, vec3 light_dir, vec3 normal ){
+float calc_shadow_factor( vec4 light_space_pos ){
+    vec3 projected_coords = light_space_pos.xyz / light_space_pos.w;
+    vec2 uv_coords;
+    uv_coords.x = 0.5 * projected_coords.x + 0.5;
+    uv_coords.y = 0.5 * projected_coords.y + 0.5;
+    float z     = 0.5 * projected_coords.z + 0.5;
+    float depth = texture( gShadowMap, uv_coords ).x;
+
+    if( depth < z + 0.00001 )
+        return 0.5;
+    else
+        return 1.0;
+}
+
+
+vec4 calc_light_internal( BaseLight light, vec3 light_dir, vec3 normal, float shadow_factor ){
     vec4 ambient_color = vec4( light.Color, 1.0 ) * light.AmbientIntensity;
     float diffuse_factor = dot( normal, -light_dir );
 
@@ -100,30 +120,31 @@ vec4 calc_light_internal( BaseLight light, vec3 light_dir, vec3 normal ){
 
     }
 
-    return (ambient_color + diffuse_color + specular_color);
+    return (ambient_color + shadow_factor * ( diffuse_color + specular_color ) );
 }
 
 vec4 calc_dir_light( vec3 normal ){
-    return calc_light_internal( gDirectionalLight.Base, gDirectionalLight.Direction, normal );
+    return calc_light_internal( gDirectionalLight.Base, gDirectionalLight.Direction, normal, 1.0 );
 }
 
-vec4 calc_point_light( PointLight l, vec3 normal ){
+vec4 calc_point_light( PointLight l, vec3 normal, vec4 light_space_pos ){
     vec3 light_dir = WorldPos0 - l.Position;
     float distance = length( light_dir );
     light_dir = normalize( light_dir );
+    float shadow_factor = calc_shadow_factor( light_space_pos );
 
-    vec4 color = calc_light_internal( l.Base, light_dir, normal );
+    vec4 color = calc_light_internal( l.Base, light_dir, normal, shadow_factor );
     float attenuation =l.Atten.Constant + l.Atten.Linear * distance + l.Atten.Exp * distance * distance;
 
     return color / attenuation;
 }
 
-vec4 calc_spot_light( SpotLight l, vec3 normal ){
+vec4 calc_spot_light( SpotLight l, vec3 normal, vec4 light_space_pos ){
     vec3 light_2_pixel  = normalize( WorldPos0 - l.Base.Position );
     float spot_factor = dot( light_2_pixel, l.Direction );
 
     if( spot_factor > l.CutOff ){
-        vec4 color = calc_point_light( l.Base, normal );
+        vec4 color = calc_point_light( l.Base, normal, light_space_pos );
         return color * ( 1.0 - ( 1.0 - spot_factor ) * 1.0 / ( 1.0 - l.CutOff ) );
     }else{
         return vec4( 0.0, 0.0, 0.0, 0.0 );
@@ -135,14 +156,15 @@ void main(){
     vec4 total_light = calc_dir_light( normal );
 
     for( int i = 0; i < gNumPointLights; i++ ){
-        total_light += calc_point_light( gPointLights[ i ], normal );
+        total_light += calc_point_light( gPointLights[ i ], normal, LightSpacePos );
     }
 
     for( int i = 0; i < gNumSpotLights; i++ ){
-        total_light += calc_spot_light( gSpotLights[ i ], normal );
+        total_light += calc_spot_light( gSpotLights[ i ], normal, LightSpacePos );
     }
 
-    FragColor = texture2D( gSampler, TexCoord0.xy ) * total_light;
+    vec4 sampled_color = texture2D( gSampler, TexCoord0.xy );
+    FragColor = sampled_color * total_light;
 }
 )||";
 
@@ -289,6 +311,13 @@ bool LightTechnique::init(){
     )
         return false;
 
+
+    lightWVPLocation_ = getUniformLocation( "gLightWVP" );
+    shadowMapLocation_= getUniformLocation( "gShadowMap" );
+
+    if( lightWVPLocation_ == INVALID_UNIFORM_LOCATION || shadowMapLocation_ == INVALID_UNIFORM_LOCATION )
+        return false;
+
     return true;
 }
 
@@ -308,7 +337,7 @@ void LightTechnique::setDirectionLight(const DirectionLight &dl){
     glUniform3f( dirLightLocation_.Color, dl.Color.x, dl.Color.y, dl.Color.z );
     glUniform1f( dirLightLocation_.AmbientIntensity, dl.AmbientIntensity );
     Vector3f dir = dl.Direction;
-    dir.normalize();
+    dir.Normalize();
     glUniform3f( dirLightLocation_.Direction, dir.x, dir.y, dir.z );
     glUniform1f( dirLightLocation_.DiffuseIntensity, dl.DiffuseIntensity );
 }
@@ -348,7 +377,7 @@ void LightTechnique::setSpotLigts(unsigned nLights, const SpotLight *pLights){
         glUniform1f( spotLightsLocation_[ idx ].DiffuseIntensity, pLights[ idx ].DiffuseIntensity );
         glUniform3f( spotLightsLocation_[ idx ].Position, pLights[ idx ].Position.x, pLights[ idx ].Position.y, pLights[ idx ].Position.z );
         Vector3f dir = pLights[ idx ].Direction;
-        dir.normalize();
+        dir.Normalize();
         glUniform3f( spotLightsLocation_[ idx ].Direction, dir.x, dir.y, dir.z );
         glUniform1f( spotLightsLocation_[ idx ].CutOff, cosf( ToRadian( pLights[ idx ].CutOff ) ) );
 
@@ -356,4 +385,12 @@ void LightTechnique::setSpotLigts(unsigned nLights, const SpotLight *pLights){
         glUniform1f( spotLightsLocation_[ idx ].Atten.Linear,      pLights[ idx ].Attenuation.Linear );
         glUniform1f( spotLightsLocation_[ idx ].Atten.Exp,         pLights[ idx ].Attenuation.Exp );
     }
+}
+
+void LightTechnique::setLightWVP(const Matrix4f &lightWVP){
+    glUniformMatrix4fv( lightWVPLocation_, 1, GL_TRUE, ( const GLfloat* ) lightWVP.m );
+}
+
+void LightTechnique::setShadowMapTextureUnit(unsigned textureUnitId){
+    glUniform1i( shadowMapLocation_, textureUnitId );
 }

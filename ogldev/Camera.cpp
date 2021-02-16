@@ -1,5 +1,6 @@
 #include "Camera.hpp"
 
+#include <iostream>
 #include <GL/freeglut.h>
 
 namespace{
@@ -22,7 +23,7 @@ Camera::Camera( int w, int h )
 , onLowerEdge_( false )
 , onLeftEdge_( false )
 , onRightEdge_( false ){
-    target_.normalize();
+    target_.Normalize();
     init();
 }
 
@@ -38,14 +39,14 @@ Camera::Camera(int w, int h, const Vector3f &pos, const Vector3f &target, const 
 , onLowerEdge_( false )
 , onLeftEdge_( false )
 , onRightEdge_( false ){
-    target_.normalize();
-    up_.normalize();
+    target_.Normalize();
+    up_.Normalize();
     init();
 }
 
 void Camera::init(){
     Vector3f hTarget( target_.x, 0.0f, target_.z );
-    hTarget.normalize();
+    hTarget.Normalize();
 
     if( hTarget.z >= 0.0f ){
         if( hTarget.x >= 0.0f )
@@ -84,8 +85,8 @@ bool Camera::onKeyboard(int key){
     break;
     case GLUT_KEY_LEFT:
     {
-        Vector3f left = target_.cross( up_ );
-        left.normalize();
+        Vector3f left = target_.Cross( up_ );
+        left.Normalize();
         left *= StepScale;
         pos_ += left;
         ret = true;
@@ -93,8 +94,8 @@ bool Camera::onKeyboard(int key){
     break;
     case GLUT_KEY_RIGHT:
     {
-        Vector3f right = up_.cross( target_ );
-        right.normalize();
+        Vector3f right = up_.Cross( target_ );
+        right.Normalize();
         right *= StepScale;
         pos_ += right;
         ret = true;
@@ -111,11 +112,13 @@ void Camera::onMouse(int x, int y){
     const int deltaX = x - mousePos_.x;
     const int deltaY = y - mousePos_.y;
 
+    std::cout << "deltaX = " << deltaX << ", deltaY = " << deltaY << std::endl;
+
     mousePos_.x = x;
     mousePos_.y = y;
 
-    angleH_ += ( float )deltaX / 20.0f;
-    angleV_ += ( float )deltaY / 20.0f;
+    angleH_ += ( float )deltaX / 10.0f;
+    angleV_ += ( float )deltaY / 10.0f;
 
     if( 0 == deltaX ){
         if( x <= MARGIN )
@@ -171,17 +174,17 @@ void Camera::update(){
     Vector3f vaxis( 0.0f, 1.0f, 0.0f );
     // rotate view vector by orizontal angle around y.
     Vector3f view( 1.0f, 0.0f, 0.0f );
-    view.rotate( angleH_, vaxis );
-    view.normalize();
+    view.Rotate( angleH_, vaxis );
+    view.Normalize();
 
     // rotate view vector by the vertical angle around horizontal axis.
-    Vector3f haxis = vaxis.cross( view );
-    haxis.normalize();
-    view.rotate( angleV_, haxis );
+    Vector3f haxis = vaxis.Cross( view );
+    haxis.Normalize();
+    view.Rotate( angleV_, haxis );
 
     target_ = view;
-    target_.normalize();
+    target_.Normalize();
 
-    up_ = target_.cross( haxis );
-    up_.normalize();
+    up_ = target_.Cross( haxis );
+    up_.Normalize();
 }

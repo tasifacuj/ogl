@@ -18,7 +18,7 @@
 #include "ShadowMapTechnique.hpp"
 #include "ShadowMapFBO.hpp"
 
-#define WINDOW_WIDTH 1024
+#define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
 
 
@@ -27,40 +27,53 @@
 class Main : public CallbackInterface{
 public: // == Main ==
     bool init(){
-        spotLight_.AmbientIntensity = 1.0f;
+        spotLight_.AmbientIntensity = 0.1f;
         spotLight_.DiffuseIntensity = 0.9f;
-        spotLight_.Color = Vector3f( 1.0f, 1.0f, 1.0f );
+        spotLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
         spotLight_.Attenuation.Linear = 0.01f;
-        spotLight_.Position = Vector3f( -20.0f, 20.0f, 5.0f );
-        spotLight_.Direction = Vector3f( 1.0f, -1.0f, 0.0f );
-        spotLight_.CutOff = 20.0f;
+        spotLight_.Position  = Vector3f(-20.0, 20.0, 1.0f);
+        spotLight_.Direction = Vector3f(1.0f, -1.0f, 0.0f);
+        spotLight_.CutOff =  20.0f;
 
+         Vector3f Pos(3.0f, 8.0f, -10.0f);
+        Vector3f Target(0.0f, -0.2f, 1.0f);
+        Vector3f Up(0.0, 1.0f, 0.0f);
         if( not shadowMapFBO_.init( WINDOW_WIDTH, WINDOW_HEIGHT ) )
             return false;
 
-//        Vector3f pos( 0.0f, 0.0f, 0.0f ), target( 10.0f, 0.0f, -1.0f ), up( 0.0f, 1.0f, 0.0f );
+        pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
 
-        pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT);
-        plightEffect_ = std::make_unique< LightTechnique >();
+// main shader
+        pLightEffectShader_ = std::make_unique< LightTechnique >();
 
-        if( !plightEffect_->init() ){
+        if( !pLightEffectShader_->init() ){
             std::cerr << "Failed to setup light technique" << std::endl;
             return false;
         }
 
-        p_shadowMapTech_ = std::make_unique< ShadowMapTechnique >();
+        pLightEffectShader_->useProgram();
+        pLightEffectShader_->setSpotLigts( 1, &spotLight_ );
+        pLightEffectShader_->setTextureUnit( 0 );// use GL_TEXTURE0
+        pLightEffectShader_->setShadowMapTextureUnit( 1 );// use GL_TEXTURE1
 
-        if( not p_shadowMapTech_->init() ){
+        pShadowMapShader_ = std::make_unique< ShadowMapTechnique >();
+
+        if( not pShadowMapShader_->init() ){
             std::cerr << "Failed to setup shadow map tech" << std::endl;
             return false;
         }
 
-        p_shadowMapTech_->enable();
+        pQuad_ = std::make_unique< Mesh >();
 
-        p_quad_ = std::make_unique< Mesh >();
-
-        if( not p_quad_->loadMesh( "/home/tez/projects/ogl/Content/quad.obj" ) ){
+        if( not pQuad_->loadMesh( "/home/tez/projects/ogl/Content/quad.obj" ) ){
             std::cerr << "Failed to load mesh quad.obj" << std::endl;
+            return false;
+        }
+
+        pGroundTex_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/test.png" );
+
+        if( not pGroundTex_->load() ){
+            std::cerr << "Failed to load ground texture" << std::endl;
             return false;
         }
 
@@ -80,7 +93,7 @@ public: // == Main ==
 public:// == CallbackInterface ==
     virtual void renderSceneCB() override{
         pCamera_->onRender();
-        scale_ += 0.1f;
+        scale_ += 0.5f;
 
         shadowMapPass();
         renderPath();
@@ -101,12 +114,6 @@ public:// == CallbackInterface ==
         case 'q':
             glutLeaveMainLoop();
             break;
-        case 'a':
-            dirLight_.AmbientIntensity += 0.05f;
-            break;
-        case 's':
-            dirLight_.AmbientIntensity -= 0.05f;
-            break;
 
         default:
             break;
@@ -119,17 +126,17 @@ public:// == CallbackInterface ==
 
 private:
     void shadowMapPass(){
-       shadowMapFBO_.bindToWrite();
-
+        shadowMapFBO_.bindToWrite();// turn on depth test framebuffer and attached texture, that calculates depth
         glClear(GL_DEPTH_BUFFER_BIT);
+        pShadowMapShader_->useProgram();
 
-        Pipeline p;
-        p.scale(0.2f, 0.2f, 0.2f);
+         Pipeline p;
+        p.scale(0.1f, 0.1f, 0.1f);
         p.rotate(0.0f, scale_, 0.0f);
         p.worldPos(0.0f, 0.0f, 5.0f);
         p.setCamera(spotLight_.Position, spotLight_.Direction, Vector3f(0.0f, 1.0f, 0.0f));
         p.setPerspectiveProjection(60.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 50.0f);
-        p_shadowMapTech_->setWVP(p.getWVPTrans());
+        pShadowMapShader_->setWVP(p.getWVPTransformation());
         pMesh_->render();
 
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -138,35 +145,54 @@ private:
     void renderPath(){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        p_shadowMapTech_->setTextureUnit(0);
-        shadowMapFBO_.bindToRead(GL_TEXTURE0);// it works because p_quad does not have texture and it will not be overritten
+        pLightEffectShader_->enable();
+
+        shadowMapFBO_.bindToRead(GL_TEXTURE1);
 
         Pipeline p;
-        p.scale(5.0f, 5.0f, 5.0f);
-        p.worldPos(0.0f, 0.0f, 20.0f);
-        p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
         p.setPerspectiveProjection(60.0f, WINDOW_WIDTH, WINDOW_HEIGHT, 1.0f, 50.0f);
-        p_shadowMapTech_->setWVP(p.getWVPTrans());
-        p_quad_->render();
+        p.scale(10.0f, 10.0f, 10.0f);
+        p.worldPos(0.0f, 0.0f, 1.0f);
+        p.rotate(90.0f, 0.0f, 0.0f);
+        p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+
+        pLightEffectShader_->setWVP(p.getWVPTransformation());
+        pLightEffectShader_->setWorldMatrix(p.getWorldTransformation());
+        p.setCamera(spotLight_.Position, spotLight_.Direction, Vector3f(0.0f, 1.0f, 0.0f));
+        pLightEffectShader_->setLightWVP(p.getWVPTransformation());
+        pLightEffectShader_->setEyeWorldPosition(pCamera_->getPos());
+        pGroundTex_->bind(GL_TEXTURE0);
+        pQuad_->render();
+
+        p.scale(0.1f, 0.1f, 0.1f);
+        p.rotate(0.0f, scale_, 0.0f);
+        p.worldPos(0.0f, 5.0f, 3.0f);
+        p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+        pLightEffectShader_->setWVP(p.getWVPTransformation());
+        pLightEffectShader_->setWorldMatrix(p.getWorldTransformation());
+        p.setCamera(spotLight_.Position, spotLight_.Direction, Vector3f(0.0f, 1.0f, 0.0f));
+        pLightEffectShader_->setLightWVP(p.getWVPTransformation());
+
+        pMesh_->render();
     }
 private:
     GLuint                              vbo_{};
     GLuint                              ibo_{};
-    std::unique_ptr< LightTechnique >   plightEffect_;
-    std::unique_ptr< ShadowMapTechnique > p_shadowMapTech_;
+    std::unique_ptr< LightTechnique >   pLightEffectShader_;
+    std::unique_ptr< ShadowMapTechnique > pShadowMapShader_;
     std::unique_ptr< Mesh >             pMesh_;
+    std::unique_ptr< Mesh >             pQuad_;
     std::unique_ptr< Camera >           pCamera_;
     float                               scale_{};
-    DirectionLight                      dirLight_;
-    std::unique_ptr< Mesh >             p_quad_;
     ShadowMapFBO                        shadowMapFBO_;
     SpotLight                           spotLight_;
+    std::unique_ptr< Texture >          pGroundTex_;
 };
 
 int main( int argc, char** argv ){
     GLUTBackendInit( argc, argv );
 
-    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, true, "nice app" ) )
+    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, false, "nice app" ) )
         return -1;
 
     Main app;

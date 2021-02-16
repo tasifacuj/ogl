@@ -74,6 +74,9 @@ public: //== LightTechnique ==
 
     void setPointLights( unsigned numLights, PointLight const* pLights );
     void setSpotLigts( unsigned nLigts, SpotLight const* pLights );
+
+    void setLightWVP( Matrix4f const& lightWVP );
+    void setShadowMapTextureUnit( unsigned textureUnitId );
 private:
     GLuint  wVPLoacation_{};
     GLuint  worldMatrixLocation_{};
@@ -84,6 +87,8 @@ private:
     GLuint matSpecularPowerLocation_{};
     GLuint numPointLightsLocation_{};
     GLuint numSpotLightsLocation_{};
+
+
 
     struct{
         GLuint  Color;
@@ -119,6 +124,9 @@ private:
             GLuint Exp;
         } Atten;
     } spotLightsLocation_[ MAX_SPOT_LIGHTS ];
+
+    GLuint  lightWVPLocation_{};
+    GLuint  shadowMapLocation_{};
 };
 
 #endif // LIGHTTECHNIQUE_HPP

@@ -49,8 +49,8 @@ public: // == Pipeline ==
         rotateInfo_.z = z;
     }
 
-    const Matrix4f& getWVPTrans();
-    const Matrix4f& getWorldTrans();
+    const Matrix4f& getWVPTransformation();
+    const Matrix4f& getWorldTransformation();
 
 
     void setPerspectiveProjection( float fow, float width, float height, float zNear, float zFar){

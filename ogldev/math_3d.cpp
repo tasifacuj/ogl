@@ -1,53 +1,79 @@
+/*
+
+	Copyright 2010 Etay Meiri
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "math_3d.h"
 
-Vector3f Vector3f::cross(const Vector3f &v){
+Vector3f Vector3f::Cross(const Vector3f& v) const
+{
     const float _x = y * v.z - z * v.y;
     const float _y = z * v.x - x * v.z;
     const float _z = x * v.y - y * v.x;
 
-    return Vector3f( _x, _y, _z );
+    return Vector3f(_x, _y, _z);
 }
 
-Vector3f &Vector3f::normalize( ){
-    float len = std::sqrt( x * x + y * y + z * z );
-    x /= len;
-    y /= len;
-    z /= len;
+Vector3f& Vector3f::Normalize()
+{
+    const float Length = sqrtf(x * x + y * y + z * z);
+
+    x /= Length;
+    y /= Length;
+    z /= Length;
 
     return *this;
 }
-void Vector3f::rotate(float angle, const Vector3f &axis){
-    const float sinHlaphAngle = sin( ToRadian( angle / 2 ) );
-    const float cosHalpfAngle = cos( ToRadian( angle / 2 ) );
 
-    const float vx = axis.x * sinHlaphAngle;
-    const float vy = axis.y * sinHlaphAngle;
-    const float vz = axis.z * sinHlaphAngle;
-    const float vw = cosHalpfAngle;
-    Quaternion rotationQ( vx, vy, vz, vw );
-    Quaternion conjugateQ = rotationQ.conjugate();
-    Quaternion W = rotationQ * ( *this ) * conjugateQ;
+void Vector3f::Rotate(float Angle, const Vector3f& Axe)
+{
+    const float SinHalfAngle = sinf(ToRadian(Angle/2));
+    const float CosHalfAngle = cosf(ToRadian(Angle/2));
 
-    x = W.x_;
-    y = W.y_;
-    z = W.z_;
+    const float Rx = Axe.x * SinHalfAngle;
+    const float Ry = Axe.y * SinHalfAngle;
+    const float Rz = Axe.z * SinHalfAngle;
+    const float Rw = CosHalfAngle;
+    Quaternion RotationQ(Rx, Ry, Rz, Rw);
+
+    Quaternion ConjugateQ = RotationQ.Conjugate();
+  //  ConjugateQ.Normalize();
+    Quaternion W = RotationQ * (*this) * ConjugateQ;
+
+    x = W.x;
+    y = W.y;
+    z = W.z;
 }
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Matrix4f::initScaleTransform(float scaleX, float scaleY, float scaleZ){
-    m[0][0] = scaleX; m[0][1] = 0.0f;   m[0][2] = 0.0f;   m[0][3] = 0.0f;
-    m[1][0] = 0.0f;   m[1][1] = scaleY; m[1][2] = 0.0f;   m[1][3] = 0.0f;
-    m[2][0] = 0.0f;   m[2][1] = 0.0f;   m[2][2] = scaleZ; m[2][3] = 0.0f;
+void Matrix4f::InitScaleTransform(float ScaleX, float ScaleY, float ScaleZ)
+{
+    m[0][0] = ScaleX; m[0][1] = 0.0f;   m[0][2] = 0.0f;   m[0][3] = 0.0f;
+    m[1][0] = 0.0f;   m[1][1] = ScaleY; m[1][2] = 0.0f;   m[1][3] = 0.0f;
+    m[2][0] = 0.0f;   m[2][1] = 0.0f;   m[2][2] = ScaleZ; m[2][3] = 0.0f;
     m[3][0] = 0.0f;   m[3][1] = 0.0f;   m[3][2] = 0.0f;   m[3][3] = 1.0f;
 }
 
-void Matrix4f::initRotateTransform(float rotateX, float rotateY, float rotateZ){
+void Matrix4f::InitRotateTransform(float RotateX, float RotateY, float RotateZ)
+{
     Matrix4f rx, ry, rz;
-    float x = ToRadian( rotateX );
-    float y = ToRadian( rotateY );
-    float z = ToRadian( rotateZ );
+
+    const float x = ToRadian(RotateX);
+    const float y = ToRadian(RotateY);
+    const float z = ToRadian(RotateZ);
 
     rx.m[0][0] = 1.0f; rx.m[0][1] = 0.0f   ; rx.m[0][2] = 0.0f    ; rx.m[0][3] = 0.0f;
     rx.m[1][0] = 0.0f; rx.m[1][1] = cosf(x); rx.m[1][2] = -sinf(x); rx.m[1][3] = 0.0f;
@@ -67,8 +93,8 @@ void Matrix4f::initRotateTransform(float rotateX, float rotateY, float rotateZ){
     *this = rz * ry * rx;
 }
 
-
-void Matrix4f::initTranslateTranaform(float x, float y, float z){
+void Matrix4f::InitTranslationTransform(float x, float y, float z)
+{
     m[0][0] = 1.0f; m[0][1] = 0.0f; m[0][2] = 0.0f; m[0][3] = x;
     m[1][0] = 0.0f; m[1][1] = 1.0f; m[1][2] = 0.0f; m[1][3] = y;
     m[2][0] = 0.0f; m[2][1] = 0.0f; m[2][2] = 1.0f; m[2][3] = z;
@@ -76,15 +102,14 @@ void Matrix4f::initTranslateTranaform(float x, float y, float z){
 }
 
 
-void Matrix4f::initCameraTransform(const Vector3f &target, const Vector3f &up){
-    Vector3f N = target;// z-axis
-    N.normalize();
-
-    Vector3f U = up;
-    U = U.cross( N );
-    U.normalize();
-
-    Vector3f V = N.cross( U );
+void Matrix4f::InitCameraTransform(const Vector3f& Target, const Vector3f& Up)
+{
+    Vector3f N = Target;
+    N.Normalize();
+    Vector3f U = Up;
+    U.Normalize();
+    U = U.Cross(N);
+    Vector3f V = N.Cross(U);
 
     m[0][0] = U.x;   m[0][1] = U.y;   m[0][2] = U.z;   m[0][3] = 0.0f;
     m[1][0] = V.x;   m[1][1] = V.y;   m[1][2] = V.z;   m[1][3] = 0.0f;
@@ -92,54 +117,62 @@ void Matrix4f::initCameraTransform(const Vector3f &target, const Vector3f &up){
     m[3][0] = 0.0f;  m[3][1] = 0.0f;  m[3][2] = 0.0f;  m[3][3] = 1.0f;
 }
 
-void Matrix4f::initPerspectiveProjection(float fow, float width, float height, float zNear, float zFar){
-    float ar = width / height;
-    float zRange = zFar - zNear;
-    float tanHalfFOV = std::tan( ToRadian( fow / 2.0f ) );
+void Matrix4f::InitPersProjTransform(float FOV, float Width, float Height, float zNear, float zFar)
+{
+    const float ar         = Width / Height;
+    const float zRange     = zNear - zFar;
+    const float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
 
-    m[0][0] = 1.0f/(tanHalfFOV * ar); m[0][1] = 0.0f;            m[0][2] = 0.0f;                    m[0][3] = 0.0;
-    m[1][0] = 0.0f;                   m[1][1] = 1.0f/tanHalfFOV; m[1][2] = 0.0f;                    m[1][3] = 0.0;
-    m[2][0] = 0.0f;                   m[2][1] = 0.0f;            m[2][2] = (-zNear -zFar)/zRange ;  m[2][3] = 2.0f * zFar*zNear/zRange;
-    m[3][0] = 0.0f;                   m[3][1] = 0.0f;            m[3][2] = 1.0f;                    m[3][3] = 0.0;
+    m[0][0] = 1.0f/(tanHalfFOV * ar); m[0][1] = 0.0f;            m[0][2] = 0.0f;          m[0][3] = 0.0;
+    m[1][0] = 0.0f;                   m[1][1] = 1.0f/tanHalfFOV; m[1][2] = 0.0f;          m[1][3] = 0.0;
+    m[2][0] = 0.0f;                   m[2][1] = 0.0f;            m[2][2] = (-zNear -zFar)/zRange ; m[2][3] = 2.0f * zFar*zNear/zRange;
+    m[3][0] = 0.0f;                   m[3][1] = 0.0f;            m[3][2] = 1.0f;          m[3][3] = 0.0;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-Quaternion::Quaternion(float x, float y, float z, float w)
-: x_( x )
-, y_( y )
-, z_( z )
-, w_( w )
-{}
 
-void Quaternion::normalize(){
-    float length = sqrt( x_ * x_ + y_ * y_ + z_ * z_ );
-
-    x_ /= length;
-    y_ /= length;
-    z_ /= length;
-    w_ /= length;
+Quaternion::Quaternion(float _x, float _y, float _z, float _w)
+{
+    x = _x;
+    y = _y;
+    z = _z;
+    w = _w;
 }
 
-Quaternion Quaternion::conjugate(){
-    return Quaternion( -x_, -y_, -z_, w_ );
+void Quaternion::Normalize()
+{
+    float Length = sqrtf(x * x + y * y + z * z + w * w);
+
+    x /= Length;
+    y /= Length;
+    z /= Length;
+    w /= Length;
 }
 
-Quaternion operator* ( Quaternion const& l, Quaternion const& r ){
-    const float w = (l.w_ * r.w_) - (l.x_ * r.x_) - (l.y_ * r.y_) - (l.z_ * r.z_);
-    const float x = (l.x_ * r.w_) + (l.w_ * r.x_) + (l.y_ * r.z_) - (l.z_ * r.y_);
-    const float y = (l.y_ * r.w_) + (l.w_ * r.y_) + (l.z_ * r.x_) - (l.x_ * r.z_);
-    const float z = (l.z_ * r.w_) + (l.w_ * r.z_) + (l.x_ * r.y_) - (l.y_ * r.x_);
+
+Quaternion Quaternion::Conjugate()
+{
+    Quaternion ret(-x, -y, -z, w);
+    return ret;
+}
+
+Quaternion operator*(const Quaternion& l, const Quaternion& r)
+{
+    const float w = (l.w * r.w) - (l.x * r.x) - (l.y * r.y) - (l.z * r.z);
+    const float x = (l.x * r.w) + (l.w * r.x) + (l.y * r.z) - (l.z * r.y);
+    const float y = (l.y * r.w) + (l.w * r.y) + (l.z * r.x) - (l.x * r.z);
+    const float z = (l.z * r.w) + (l.w * r.z) + (l.x * r.y) - (l.y * r.x);
 
     Quaternion ret(x, y, z, w);
 
     return ret;
 }
 
-Quaternion operator* ( Quaternion const& q, Vector3f const& v ){
-    const float w = - (q.x_ * v.x) - (q.y_ * v.y) - (q.z_ * v.z);
-    const float x =   (q.w_ * v.x) + (q.y_ * v.z) - (q.z_ * v.y);
-    const float y =   (q.w_ * v.y) + (q.z_ * v.x) - (q.x_ * v.z);
-    const float z =   (q.w_ * v.z) + (q.x_ * v.y) - (q.y_ * v.x);
+Quaternion operator*(const Quaternion& q, const Vector3f& v)
+{
+    const float w = - (q.x * v.x) - (q.y * v.y) - (q.z * v.z);
+    const float x =   (q.w * v.x) + (q.y * v.z) - (q.z * v.y);
+    const float y =   (q.w * v.y) + (q.z * v.x) - (q.x * v.z);
+    const float z =   (q.w * v.z) + (q.x * v.y) - (q.y * v.x);
 
     Quaternion ret(x, y, z, w);
 

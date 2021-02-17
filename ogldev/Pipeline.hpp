@@ -61,6 +61,10 @@ public: // == Pipeline ==
         perspectiveProjection_.zfar = zFar;
     }
 
+    void setPerspectiveProjection(  PersProjInfo const & ppi ){
+        setPerspectiveProjection( ppi.FOV, ppi.Width, ppi.Height, ppi.zNear, ppi.zFar );
+    }
+
     void setCamera( Vector3f const& pos, Vector3f const& target, Vector3f const& up ){
         camera_.Pos = pos;
         camera_.Target = target;

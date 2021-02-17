@@ -112,7 +112,7 @@ void Camera::onMouse(int x, int y){
     const int deltaX = x - mousePos_.x;
     const int deltaY = y - mousePos_.y;
 
-    std::cout << "deltaX = " << deltaX << ", deltaY = " << deltaY << std::endl;
+//    std::cout << "deltaX = " << deltaX << ", deltaY = " << deltaY << std::endl;
 
     mousePos_.x = x;
     mousePos_.y = y;

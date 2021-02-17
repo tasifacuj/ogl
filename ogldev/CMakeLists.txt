@@ -12,7 +12,10 @@ set( SOURCES main.cpp
     LightTechnique.cpp 
     Mesh.cpp
     ShadowMapFBO.cpp
-    ShadowMapTechnique.cpp )
+    ShadowMapTechnique.cpp
+    CubeMapTexture.cpp
+    SkyboxShader.cpp
+    SkyBox.cpp )
 
 set( HEADERS
     math_3d.h 
@@ -28,6 +31,9 @@ set( HEADERS
     Mesh.hpp
     ShadowMapFBO.hpp
     ShadowMapTechnique.hpp
+    CubeMapTexture.hpp
+    SkyboxShader.hpp
+    SkyBox.hpp
 )
 
 set(CMAKE_CXX_STANDARD 14)

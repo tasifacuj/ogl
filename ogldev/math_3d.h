@@ -190,5 +190,15 @@ Quaternion operator*(const Quaternion& l, const Quaternion& r);
 
 Quaternion operator*(const Quaternion& q, const Vector3f& v);
 
+
+struct PersProjInfo
+{
+    float FOV;
+    float Width;
+    float Height;
+    float zNear;
+    float zFar;
+};
+
 #endif	/* MATH_3D_H */
 

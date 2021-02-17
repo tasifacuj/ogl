@@ -70,9 +70,9 @@ void GLUTBackendRun(CallbackInterface *callbacks){
 
     glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
     glEnable( GL_DEPTH_TEST );
-//    glFrontFace( GL_CW );
-//    glCullFace( GL_BACK );
-//    glEnable( GL_CULL_FACE );
+    glFrontFace( GL_CW );
+    glCullFace( GL_BACK );
+    glEnable( GL_CULL_FACE );
     s_pCallbacks = callbacks;
     init_callbacks();
     glutMainLoop();

@@ -39,7 +39,7 @@ void Mesh::clear(){
 bool Mesh::loadMesh(const std::string &filename){
     clear();
     Assimp::Importer importer;
-    aiScene const* pScene = importer.ReadFile( filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs );
+    aiScene const* pScene = importer.ReadFile( filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
 
     if( pScene ){
         return initFromScene( pScene, filename );
@@ -72,7 +72,11 @@ void Mesh::initMesh(unsigned index, const aiMesh *paiMesh){
         aiVector3D const* pPos = &( paiMesh->mVertices[ idx ] );
         aiVector3D const* pNormal = &( paiMesh->mNormals[ idx ] );
         aiVector3D const* pTexCoord = paiMesh->HasTextureCoords( 0 ) ? &( paiMesh->mTextureCoords[ 0 ][ idx ] ) : &zero3D;
-        Vertex v( Vector3f( pPos->x, pPos->y, pPos->z ), Vector2f( pTexCoord->x, pTexCoord->y ), Vector3f( pNormal->x, pNormal->y, pNormal->z ) );
+        aiVector3D const* pTangent = &( paiMesh->mTangents[ idx ] );
+        Vertex v( Vector3f( pPos->x, pPos->y, pPos->z )
+            , Vector2f( pTexCoord->x, pTexCoord->y )
+            , Vector3f( pNormal->x, pNormal->y, pNormal->z )
+            , Vector3f( pTangent->x, pTangent->y, pTangent->z ) );
         vertices.emplace_back( v );
     }
 
@@ -123,12 +127,6 @@ bool Mesh::initMaterials(const aiScene *pScene, const std::string &filename){
                 }
             }
         }
-
-        // if( !textures_[ idx ].get() ){
-        //     std::cout << "Load default texture for idx " << idx << " and path white.png"  << std::endl;
-        //     textures_[ idx ] = std::make_shared< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogldev/Content/white.png" );
-        //     rval = textures_[ idx ]->load();
-        // }
     }
 
     return rval;
@@ -138,12 +136,14 @@ void Mesh::render(){
     glEnableVertexAttribArray( 0 );
     glEnableVertexAttribArray( 1 );
     glEnableVertexAttribArray( 2 );
+    glEnableVertexAttribArray( 3 );
 
     for( size_t idx = 0; idx < entries_.size(); idx++ ){
         glBindBuffer( GL_ARRAY_BUFFER, entries_[ idx ].VBO );
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), 0 );
-        glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )12 );
-        glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )20 );
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), 0 );                     // pos
+        glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )12 );   // texture
+        glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )20 );   // normal
+        glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )32 );   // tangent
         glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, entries_[ idx ].IBO );
         unsigned materialIdx = entries_[ idx ].MaterialIndex;
 
@@ -155,6 +155,7 @@ void Mesh::render(){
         glDrawElements( GL_TRIANGLES, entries_[ idx ].NumIndices, GL_UNSIGNED_INT, 0 );
     }
 
+    glDisableVertexAttribArray( 3 );
     glDisableVertexAttribArray( 2 );
     glDisableVertexAttribArray( 1 );
     glDisableVertexAttribArray( 0 );

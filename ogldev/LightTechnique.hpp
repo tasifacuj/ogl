@@ -65,7 +65,6 @@ public: // == Technique ==
 public: //== LightTechnique ==
     void setWVP( const Matrix4f& wvp );
     void setWorldMatrix( const Matrix4f& wm );
-    void setTextureUnit( unsigned textureUnit );
     void setDirectionLight( DirectionLight const& dl );
 
     void setEyeWorldPosition( Vector3f const& eyeWorldPos );
@@ -76,11 +75,17 @@ public: //== LightTechnique ==
     void setSpotLigts( unsigned nLigts, SpotLight const* pLights );
 
     void setLightWVP( Matrix4f const& lightWVP );
+
+    void setColorTextureUnit( unsigned textureUnit );
     void setShadowMapTextureUnit( unsigned textureUnitId );
+    void setNormalMapTextureUnit( unsigned tuid );
 private:
     GLuint  wVPLoacation_{};
     GLuint  worldMatrixLocation_{};
-    GLuint  samplerLocation_{};// sampler2D gSampler
+    
+    GLuint  colorMapLocation_{};// sampler2D gSampler
+    GLuint  shadowMapLocation_{};
+    GLuint  normalMapLocation_{};
 
     GLuint eyeWorldPosition_{};
     GLuint matSpecularIntensityLocation_{};
@@ -126,7 +131,7 @@ private:
     } spotLightsLocation_[ MAX_SPOT_LIGHTS ];
 
     GLuint  lightWVPLocation_{};
-    GLuint  shadowMapLocation_{};
+    
 };
 
 #endif // LIGHTTECHNIQUE_HPP

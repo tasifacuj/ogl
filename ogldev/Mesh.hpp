@@ -18,11 +18,13 @@ struct Vertex{
     Vector3f Pos;
     Vector2f Tex;
     Vector3f Normal;
+    Vector3f Tangent;
 
-    Vertex( Vector3f const& pos, Vector2f const& tex, Vector3f const& normal )
+    Vertex( Vector3f const& pos, Vector2f const& tex, Vector3f const& normal, Vector3f const& tangent )
     : Pos( pos )
     , Tex( tex )
     , Normal( normal )
+    , Tangent( tangent )
     {}
 };
 

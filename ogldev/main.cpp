@@ -18,7 +18,7 @@
 #include "ShadowMapTechnique.hpp"
 #include "ShadowMapFBO.hpp"
 
-#include "SkyBox.hpp"
+#include "EngineCommon.hpp"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
@@ -32,7 +32,7 @@ public: // == Main ==
         dirLight_.AmbientIntensity = 0.2f;
         dirLight_.DiffuseIntensity = 0.8f;
         dirLight_.Color = Vector3f( 1.0f, 1.0f, 1.0f );
-        dirLight_.Direction = Vector3f( 1.0f, -1.0f, 0.0f );
+        dirLight_.Direction = Vector3f( 1.0f, 0.0f, 0.0f );
 
         ppi_.FOV = 60.0f;
         ppi_.Height = WINDOW_HEIGHT;
@@ -40,9 +40,10 @@ public: // == Main ==
         ppi_.zNear = 1.0f;
         ppi_.zFar = 100.0f;
 
-        Vector3f Pos(0.0f, 1.0f, -20.0f);
-        Vector3f Target(0.0f, 0.0f, 1.0f);
+        Vector3f Pos(0.5f, 1.025f, 0.25f);
+        Vector3f Target(0.0f, -0.5f, 1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
+        bumpMapenabled_ = true;
 
         pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
 
@@ -54,22 +55,27 @@ public: // == Main ==
 
         lightEffectShader_.useProgram();
         lightEffectShader_.setDirectionLight( dirLight_ );
-        lightEffectShader_.setTextureUnit( 0 );
+        lightEffectShader_.setColorTextureUnit( 0 );
+        lightEffectShader_.setNormalMapTextureUnit( 2 );
 
-        if( not tankMesh_.loadMesh( "/home/tez/projects/ogl/Content/phoenix_ugv.md2" ) )
+        if( not sphereMesh_.loadMesh( "/home/tez/projects/ogl/Content/box.obj" ) )
             return false;
 
-        pSkyBox_ = std::make_unique< SkyBox >( *pCamera_, ppi_ );
+        pTexture_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/bricks.jpg" );
 
-        if( not pSkyBox_->init( "/home/tez/projects/ogl/Content"
-            , "sp3right.jpg"
-            , "sp3left.jpg"
-            , "sp3top.jpg"
-            , "sp3bot.jpg"
-            , "sp3front.jpg"
-            , "sp3back.jpg" ) ){
+        if( !pTexture_->load() )
             return false;
-        }
+
+        pTexture_->bind( COLOR_TEXTURE_UNIT );
+        pNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/normal_map.jpg" );
+
+        if( not pNormalMap_->load() )
+            return false;
+
+        pTrivialNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/normal_up.jpg" );
+
+        if( not pTrivialNormalMap_->load() )
+            return false;
 
         return true;
     }
@@ -80,21 +86,26 @@ public: // == Main ==
 public:// == CallbackInterface ==
     virtual void renderSceneCB() override{
         pCamera_->onRender();
-        scale_ += 0.5f;
+        scale_ += 0.01f;
 
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         lightEffectShader_.enable();
         Pipeline p;
-        p.scale( 0.1f, 0.1f, 0.1f );
         p.rotate( 0.0f, scale_, 0.0f );
-        p.worldPos( 0.0f, -1.0f, 1.0f );
+        p.worldPos( 0.0f, 0.0f, 3.0f );
         p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
         p.setPerspectiveProjection( ppi_ );
 
+        pTexture_->bind( COLOR_TEXTURE_UNIT );
+
+        if( bumpMapenabled_ )
+            pNormalMap_->bind( NORMAL_TEXTURE_UNIT );
+        else
+            pTrivialNormalMap_->bind( NORMAL_TEXTURE_UNIT );
+
         lightEffectShader_.setWVP( p.getWVPTransformation() );
         lightEffectShader_.setWorldMatrix( p.getWorldTransformation() );
-        tankMesh_.render();
-        pSkyBox_->render();
+        sphereMesh_.render();
 
         glutSwapBuffers();
     }
@@ -112,7 +123,9 @@ public:// == CallbackInterface ==
         case 'q':
             glutLeaveMainLoop();
             break;
-
+        case 'b':
+            bumpMapenabled_ = !bumpMapenabled_;
+            break;
         default:
             break;
         }
@@ -128,9 +141,12 @@ private:
     std::unique_ptr< Camera >   pCamera_;
     float                       scale_{};
     DirectionLight              dirLight_;
-    Mesh                        tankMesh_;
-    std::unique_ptr< SkyBox >   pSkyBox_;
+    Mesh                        sphereMesh_;
+    std::unique_ptr< Texture >  pTexture_;
+    std::unique_ptr< Texture >  pNormalMap_;
+    std::unique_ptr< Texture >  pTrivialNormalMap_;
     PersProjInfo                ppi_;
+    bool                        bumpMapenabled_{ false };
 };
 
 int main( int argc, char** argv ){

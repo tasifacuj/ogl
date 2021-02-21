@@ -10,6 +10,7 @@ constexpr const char* pVS = R"||(
 layout ( location = 0 ) in vec3 Position;
 layout ( location = 1 ) in vec2 TexCoord;
 layout ( location = 2 ) in vec3 Normal;
+layout ( location = 3 ) in vec3 Tangent;
 
 uniform mat4 gWVP;
 uniform mat4 gLightWVP;
@@ -19,6 +20,7 @@ out vec4 LightSpacePos;
 out vec2 TexCoord0;
 out vec3 Normal0;
 out vec3 WorldPos0;
+out vec3 Tangent0;
 
 void main(){
     gl_Position = gWVP * vec4( Position, 1.0 );
@@ -26,6 +28,7 @@ void main(){
     TexCoord0 = TexCoord;
     Normal0  = ( gWorld * vec4( Normal, 0.0 ) ).xyz;
     WorldPos0 = ( gWorld * vec4( Position, 1.0 ) ).xyz;
+    Tangent0 = ( gWorld * vec4( Position, 1.0 ) ).xyz;
 }
 )||";
 
@@ -39,6 +42,7 @@ in vec4 LightSpacePos;
 in vec2 TexCoord0;
 in vec3 Normal0;
 in vec3 WorldPos0;
+in vec3 Tangent0;
 
 out vec4 FragColor;
 
@@ -77,8 +81,9 @@ uniform DirectionalLight    gDirectionalLight;
 uniform PointLight          gPointLights[ MAX_POINT_LIGHTS ];
 uniform SpotLight           gSpotLights[ MAX_SPOT_LIGHTS ];
 
-uniform sampler2D           gSampler; // GL_TEXTURE0
+uniform sampler2D           gColorMap; // GL_TEXTURE0
 uniform sampler2D           gShadowMap;// GL_TEXTURE1??
+uniform sampler2D           gNormalMap;
 
 uniform vec3                gEyeWorldPos;
 uniform float               gMatSpecularIntensity;
@@ -151,8 +156,21 @@ vec4 calc_spot_light( SpotLight l, vec3 normal, vec4 light_space_pos ){
     }
 }
 
-void main(){
+vec3 calc_bumped_normal(){
     vec3 normal = normalize( Normal0 );
+    vec3 tangent = normalize( Tangent0 );
+    tangent = normalize( tangent - dot( tangent, normal ) * normal );
+    vec3 bi_tangent = cross( tangent, normal );
+    vec3 bump_map_normal = texture( gNormalMap , TexCoord0).xyz;
+    bump_map_normal = 2.0 * bump_map_normal - vec3( 1.0, 1.0, 1.0 );
+    mat3 TBN = mat3( tangent, bi_tangent, normal );
+    vec3 new_normal = TBN * bump_map_normal;
+    new_normal = normalize( new_normal );
+    return new_normal;
+}
+
+void main(){
+    vec3 normal = calc_bumped_normal();
     vec4 total_light = calc_dir_light( normal );
 
     for( int i = 0; i < gNumPointLights; i++ ){
@@ -163,7 +181,7 @@ void main(){
         total_light += calc_spot_light( gSpotLights[ i ], normal, LightSpacePos );
     }
 
-    vec4 sampled_color = texture2D( gSampler, TexCoord0.xy );
+    vec4 sampled_color = texture2D( gColorMap, TexCoord0.xy );
     FragColor = sampled_color * total_light;
 }
 )||";
@@ -196,7 +214,10 @@ bool LightTechnique::init(){
                  "\n";
     wVPLoacation_ = getUniformLocation( "gWVP" );
     worldMatrixLocation_ = getUniformLocation( "gWorld" );
-    samplerLocation_ = getUniformLocation( "gSampler" );
+
+    colorMapLocation_ = getUniformLocation( "gColorMap" );
+    shadowMapLocation_= getUniformLocation( "gShadowMap" );
+    normalMapLocation_= getUniformLocation( "gNormalMap" );
 
     eyeWorldPosition_ = getUniformLocation( "gEyeWorldPos" );
     matSpecularIntensityLocation_ = getUniformLocation( "gMatSpecularIntensity" );
@@ -299,7 +320,7 @@ bool LightTechnique::init(){
 
     if( wVPLoacation_ == INVALID_LOCATION
     || worldMatrixLocation_ == INVALID_LOCATION
-    || samplerLocation_ == INVALID_LOCATION
+    || colorMapLocation_ == INVALID_LOCATION
     || dirLightLocation_.Color == INVALID_LOCATION
     || dirLightLocation_.AmbientIntensity == INVALID_LOCATION
     || dirLightLocation_.Direction == INVALID_LOCATION
@@ -313,7 +334,6 @@ bool LightTechnique::init(){
 
 
     lightWVPLocation_ = getUniformLocation( "gLightWVP" );
-    shadowMapLocation_= getUniformLocation( "gShadowMap" );
 
     if( lightWVPLocation_ == INVALID_UNIFORM_LOCATION || shadowMapLocation_ == INVALID_UNIFORM_LOCATION )
         return false;
@@ -329,8 +349,13 @@ void LightTechnique::setWorldMatrix(const Matrix4f &wm){
     glUniformMatrix4fv( worldMatrixLocation_, 1, GL_TRUE, ( const GLfloat* ) wm.m );
 }
 
-void LightTechnique::setTextureUnit(unsigned textureUnit){
-    glUniform1i( samplerLocation_, textureUnit );
+void LightTechnique::setColorTextureUnit(unsigned textureUnit){
+    glUniform1i( colorMapLocation_, textureUnit );
+}
+
+
+void LightTechnique::setNormalMapTextureUnit(unsigned textureUnit){
+    glUniform1i( normalMapLocation_, textureUnit );
 }
 
 void LightTechnique::setDirectionLight(const DirectionLight &dl){

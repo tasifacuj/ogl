@@ -34,6 +34,7 @@ set( HEADERS
     CubeMapTexture.hpp
     SkyboxShader.hpp
     SkyBox.hpp
+    EngineCommon.hpp
 )
 
 set(CMAKE_CXX_STANDARD 14)

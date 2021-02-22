@@ -28,8 +28,8 @@ void BillboardList::createPositionBuffer(){
 
     for( size_t j = 0; j < NUM_ROWS; j++ ){
         for( size_t i = 0; i < NUM_COLS; i++ ){
-            Vector3f p( float( i ), float( j ) );
-            positions[ j * NUM_COLS + i ] = p;
+            Vector3f pos( float( i ), 0.0f, float( j ) );
+            positions[ j * NUM_COLS + i ] = pos;
         }
     }
 

@@ -1,7 +1,7 @@
 #include "BillboardShader.hpp"
 
 static constexpr const char* pVS = R"(
-#version 330 core
+#version 330
 
 layout( location = 0 ) in vec3 Position;
 
@@ -11,11 +11,10 @@ void main(){
 )";
 
 static constexpr const char* pGS = R"(
-#version 330 core
+#version 330
 
-layout(posints) in;
-layout( triangle_strip ) out;
-layout( max_vertices = 4 ) out;
+layout(points) in;
+layout( triangle_strip, max_vertices = 4 ) out;
 
 uniform mat4 gVP;
 uniform vec3 gCameraPos;
@@ -45,6 +44,7 @@ void main(){
     pos += right;
     gl_Position = gVP * vec4( pos, 1.0 );
     TexCoord = vec2( 1.0, 0.0 );
+    EmitVertex();
 
     // top right
     pos.y += 1.0;

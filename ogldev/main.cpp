@@ -46,7 +46,11 @@ public: // == Main ==
         Vector3f Up(0.0, 1.0f, 0.0f);
 
         pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
-
+        
+        GLint max_vertices, max_components;
+        glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &max_vertices);
+        glGetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, &max_components);
+        std::cout << "max_vertices = " << max_vertices << ", max_components = " << max_components << std::endl;
 // main shader
         if( !lightEffectShader_.init() ){
             std::cerr << "Failed to setup light technique" << std::endl;
@@ -79,6 +83,7 @@ public: // == Main ==
         if( not pNormalMap_->load() )
             return false;
 
+        
         return true;
     }
 
@@ -97,7 +102,6 @@ public:// == CallbackInterface ==
         Pipeline p;
         p.scale( 20.0f, 20.0f, 1.0f );
         p.rotate( 90.0f, 0.0f, 0.0f );
-        p.worldPos( 0.0f, 0.0f, 3.0f );
         p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
         p.setPerspectiveProjection( ppi_ );
 
@@ -105,7 +109,7 @@ public:// == CallbackInterface ==
         lightEffectShader_.setWVP( p.getWVPTransformation() );
         lightEffectShader_.setWorldMatrix( p.getWorldTransformation() );
         ground_.render();
-        bbl_.render( p.get );
+        bbl_.render( p.getViewProjectionTransformation(), pCamera_->getPos() );
 
         glutSwapBuffers();
     }

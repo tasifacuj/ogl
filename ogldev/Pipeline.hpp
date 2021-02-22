@@ -23,6 +23,7 @@ class Pipeline{
 
     Matrix4f wvpTransformation_;
     Matrix4f worldTransformation_;
+    Matrix4f viewProjectionTransformation_;
 public: // == CTORS ==
     Pipeline()
     : scale_( 1.0f, 1.0f, 1.0f )
@@ -51,7 +52,7 @@ public: // == Pipeline ==
 
     const Matrix4f& getWVPTransformation();
     const Matrix4f& getWorldTransformation();
-
+    Matrix4f const& getViewProjectionTransformation();
 
     void setPerspectiveProjection( float fow, float width, float height, float zNear, float zFar){
         perspectiveProjection_.fow = fow;

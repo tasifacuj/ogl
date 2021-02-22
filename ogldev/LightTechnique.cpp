@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cstring>
 
-constexpr const char* pVS = R"||(
+static constexpr const char* pVS = R"||(
 #version 330
 
 layout ( location = 0 ) in vec3 Position;
@@ -32,7 +32,7 @@ void main(){
 }
 )||";
 
-constexpr const char* pFS = R"||(
+static constexpr const char* pFS = R"||(
 #version 330
 
 const int MAX_POINT_LIGHTS = 2;

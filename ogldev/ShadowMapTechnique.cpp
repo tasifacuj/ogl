@@ -1,6 +1,6 @@
 #include "ShadowMapTechnique.hpp"
 
-constexpr const char* pVS = R"||(
+static constexpr const char* pVS = R"||(
 #version 330 core
 
 layout ( location = 0 ) in vec3 Position;
@@ -17,7 +17,7 @@ void main(){
 }
 )||";
 
-constexpr const char* pFS = R"(
+static constexpr const char* pFS = R"(
 #version 330 core
 
 in vec2 TexCoordOut;

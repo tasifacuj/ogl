@@ -15,7 +15,9 @@ set( SOURCES main.cpp
     ShadowMapTechnique.cpp
     CubeMapTexture.cpp
     SkyboxShader.cpp
-    SkyBox.cpp )
+    SkyBox.cpp
+    BillboardShader.cpp
+    BillboardList.cpp )
 
 set( HEADERS
     math_3d.h 
@@ -35,7 +37,8 @@ set( HEADERS
     SkyboxShader.hpp
     SkyBox.hpp
     EngineCommon.hpp
-)
+    BillboardShader.hpp
+    BillboardList.hpp)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

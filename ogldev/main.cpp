@@ -19,6 +19,7 @@
 #include "ShadowMapFBO.hpp"
 
 #include "EngineCommon.hpp"
+#include "BillboardList.hpp"
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 1024
@@ -40,10 +41,9 @@ public: // == Main ==
         ppi_.zNear = 1.0f;
         ppi_.zFar = 100.0f;
 
-        Vector3f Pos(0.5f, 1.025f, 0.25f);
+        Vector3f Pos(0.0f, 1.0f, -1.0f);
         Vector3f Target(0.0f, -0.5f, 1.0f);
         Vector3f Up(0.0, 1.0f, 0.0f);
-        bumpMapenabled_ = true;
 
         pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
 
@@ -58,23 +58,25 @@ public: // == Main ==
         lightEffectShader_.setColorTextureUnit( 0 );
         lightEffectShader_.setNormalMapTextureUnit( 2 );
 
-        if( not sphereMesh_.loadMesh( "/home/tez/projects/ogl/Content/box.obj" ) )
+        if( not ground_.loadMesh( "/home/tez/projects/ogl/Content/quad.obj" ) )
             return false;
+
+        if( not bbl_.init( "/home/tez/projects/ogl/Content/monster_hellknight.png" ) ){
+            std::cerr << "Failed to initialize billboard" << std::endl;
+            return false;
+        }
 
         pTexture_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/bricks.jpg" );
 
-        if( !pTexture_->load() )
+        if( !pTexture_->load() ){
+            std::cerr << "Failed to initialize bricks texture" << std::endl;
             return false;
+        }
 
         pTexture_->bind( COLOR_TEXTURE_UNIT );
         pNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/normal_map.jpg" );
 
         if( not pNormalMap_->load() )
-            return false;
-
-        pTrivialNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/normal_up.jpg" );
-
-        if( not pTrivialNormalMap_->load() )
             return false;
 
         return true;
@@ -86,26 +88,24 @@ public: // == Main ==
 public:// == CallbackInterface ==
     virtual void renderSceneCB() override{
         pCamera_->onRender();
-        scale_ += 0.01f;
 
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         lightEffectShader_.enable();
+        pTexture_->bind( COLOR_TEXTURE_UNIT );
+        pNormalMap_->bind( NORMAL_TEXTURE_UNIT );
+
         Pipeline p;
-        p.rotate( 0.0f, scale_, 0.0f );
+        p.scale( 20.0f, 20.0f, 1.0f );
+        p.rotate( 90.0f, 0.0f, 0.0f );
         p.worldPos( 0.0f, 0.0f, 3.0f );
         p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
         p.setPerspectiveProjection( ppi_ );
 
-        pTexture_->bind( COLOR_TEXTURE_UNIT );
-
-        if( bumpMapenabled_ )
-            pNormalMap_->bind( NORMAL_TEXTURE_UNIT );
-        else
-            pTrivialNormalMap_->bind( NORMAL_TEXTURE_UNIT );
 
         lightEffectShader_.setWVP( p.getWVPTransformation() );
         lightEffectShader_.setWorldMatrix( p.getWorldTransformation() );
-        sphereMesh_.render();
+        ground_.render();
+        bbl_.render( p.get );
 
         glutSwapBuffers();
     }
@@ -123,9 +123,6 @@ public:// == CallbackInterface ==
         case 'q':
             glutLeaveMainLoop();
             break;
-        case 'b':
-            bumpMapenabled_ = !bumpMapenabled_;
-            break;
         default:
             break;
         }
@@ -139,14 +136,13 @@ public:// == CallbackInterface ==
 private:
     LightTechnique              lightEffectShader_;
     std::unique_ptr< Camera >   pCamera_;
-    float                       scale_{};
     DirectionLight              dirLight_;
-    Mesh                        sphereMesh_;
+    Mesh                        ground_;
     std::unique_ptr< Texture >  pTexture_;
     std::unique_ptr< Texture >  pNormalMap_;
-    std::unique_ptr< Texture >  pTrivialNormalMap_;
+
     PersProjInfo                ppi_;
-    bool                        bumpMapenabled_{ false };
+    BillboardList               bbl_;
 };
 
 int main( int argc, char** argv ){

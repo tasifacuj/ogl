@@ -3,6 +3,8 @@
 #include <iostream>
 #include <GL/freeglut.h>
 
+#include <cmath>
+
 namespace{
 
 const float StepScale = 0.1f;

@@ -1,6 +1,6 @@
 #include "GlutBackEnd.hpp"
 
-#include <unistd.h>
+//#include <unistd.h>
 #include <cstdio>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -43,10 +43,7 @@ void GLUTBackendInit(int argc, char **argv){
 
 bool GLUTBackendCreateWindow(unsigned width, unsigned height, unsigned bpp, bool isFullScreen, const char *title){
     if( isFullScreen ){
-        char mode_str[ 64 ] = { 0 };
-        snprintf( mode_str, sizeof( mode_str ), "%dx%d@%d", width, height, bpp );
-        // glutGameModeString( mode_str );
-        glutEnterGameMode();
+		glutEnterGameMode();
     }else{
         glutInitWindowSize( width, height );
         glutCreateWindow( title );

@@ -21,8 +21,8 @@
 #include "EngineCommon.hpp"
 #include "BillboardList.hpp"
 
-#define WINDOW_WIDTH 1280
-#define WINDOW_HEIGHT 1024
+#define WINDOW_WIDTH 1920
+#define WINDOW_HEIGHT 1080
 
 
 // MESA_GLSL_VERSION_OVERRIDE=330 MESA_GL_VERSION_OVERRIDE=3.3 ./ogl
@@ -62,15 +62,15 @@ public: // == Main ==
         lightEffectShader_.setColorTextureUnit( 0 );
         lightEffectShader_.setNormalMapTextureUnit( 2 );
 
-        if( not ground_.loadMesh( "/home/tez/projects/ogl/Content/quad.obj" ) )
+        if( not ground_.loadMesh( "../Content/quad.obj" ) )
             return false;
 
-        if( not bbl_.init( "/home/tez/projects/ogl/Content/monster_hellknight.png" ) ){
+        if( not bbl_.init( "../Content/monster_hellknight.png" ) ){
             std::cerr << "Failed to initialize billboard" << std::endl;
             return false;
         }
 
-        pTexture_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/bricks.jpg" );
+        pTexture_ = std::make_unique< Texture >( GL_TEXTURE_2D, "../Content/bricks.jpg" );
 
         if( !pTexture_->load() ){
             std::cerr << "Failed to initialize bricks texture" << std::endl;
@@ -78,7 +78,7 @@ public: // == Main ==
         }
 
         pTexture_->bind( COLOR_TEXTURE_UNIT );
-        pNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "/home/tez/projects/ogl/Content/normal_map.jpg" );
+        pNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "../Content/normal_map.jpg" );
 
         if( not pNormalMap_->load() )
             return false;
@@ -152,7 +152,7 @@ private:
 int main( int argc, char** argv ){
     GLUTBackendInit( argc, argv );
 
-    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, true, "nice app" ) )
+    if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, false, "nice app" ) )
         return -1;
 
     Main app;

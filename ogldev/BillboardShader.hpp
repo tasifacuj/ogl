@@ -3,13 +3,15 @@
 #include "Technique.hpp"
 
 class BillboardShader : public Technique{
-    GLuint vpLocation_{};
-    GLuint cameraPosLocation_{};
-    GLuint colorMapLocation_{};
+    GLuint	vpLocation_{};
+    GLuint	cameraPosLocation_{};
+    GLuint  colorMapLocation_{};
+	GLuint	billboardSizeLocation_{};
 public:// == Technique ==
     virtual bool init() override;
 public:// == BillboardShader ==
     void setVP( Matrix4f const& m );
     void setCameraPosition( Vector3f const& pos );
     void setColorTextureUnit( unsigned textureUnitId );
+	void setBillboardSize(float sz);
 };

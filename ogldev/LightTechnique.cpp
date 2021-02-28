@@ -82,8 +82,8 @@ uniform PointLight          gPointLights[ MAX_POINT_LIGHTS ];
 uniform SpotLight           gSpotLights[ MAX_SPOT_LIGHTS ];
 
 uniform sampler2D           gColorMap; // GL_TEXTURE0
-uniform sampler2D           gShadowMap;// GL_TEXTURE1??
-uniform sampler2D           gNormalMap;
+uniform sampler2D           gShadowMap;// GL_TEXTURE1
+uniform sampler2D           gNormalMap;// GL_TEXTURE2
 
 uniform vec3                gEyeWorldPos;
 uniform float               gMatSpecularIntensity;
@@ -206,8 +206,10 @@ bool LightTechnique::init(){
 
      std::cout << "22222\n";
 
-    if( !finalize() )
-        return false;
+	 if (!finalize()) {
+		 std::cerr << "LightTechnique::finalize failed" << std::endl;
+		 return false;
+	}
 
 
     std::cout << "33333"

@@ -5,5 +5,6 @@
 
 #define INVALID_OGL_VALUE 0xFFFFFFFF
 
+#define GLCheckError() (glGetError() == GL_NO_ERROR)
 
 #endif // UTILS_HPP

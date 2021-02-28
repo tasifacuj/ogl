@@ -1,5 +1,7 @@
 #include "BillboardShader.hpp"
 
+#include <iostream>
+
 static constexpr const char* pVS = R"(
 #version 330
 
@@ -18,6 +20,7 @@ layout( triangle_strip, max_vertices = 4 ) out;
 
 uniform mat4 gVP;
 uniform vec3 gCameraPos;
+uniform float gBillboardSize;
 
 out vec2 TexCoord;
 
@@ -25,7 +28,7 @@ void main(){
     vec3 pos = gl_in[ 0 ].gl_Position.xyz;// bottom in the middle
     vec3 toCamera = normalize( gCameraPos - pos );
     vec3 up = vec3( 0.0, 1.0, 0.0 );
-    vec3 right = cross( toCamera, up );
+    vec3 right = cross( toCamera, up ) * gBillboardSize;
 
     // bottom left
     pos -= ( right * 0.5 );
@@ -34,20 +37,20 @@ void main(){
     EmitVertex();
 
     // top left
-    pos.y += 1.0;
+    pos.y += gBillboardSize;
     gl_Position = gVP * vec4( pos, 1.0 );
     TexCoord = vec2( 0.0, 1.0 );
     EmitVertex();
 
     // bottom right
-    pos.y -= 1.0;
+    pos.y -= gBillboardSize;
     pos += right;
     gl_Position = gVP * vec4( pos, 1.0 );
     TexCoord = vec2( 1.0, 0.0 );
     EmitVertex();
 
     // top right
-    pos.y += 1.0;
+    pos.y += gBillboardSize;
     gl_Position = gVP * vec4( pos, 1.0 );
     TexCoord = vec2( 1.0, 1.0 );
     EmitVertex();
@@ -88,15 +91,18 @@ bool BillboardShader::init(){
     if( not addShader( GL_FRAGMENT_SHADER, pFS ) )
         return false;
 
-    if( not finalize() )
-        return false;
+	if (not finalize()) {
+		std::cerr << "BillboardShader::finalize failed" << std::endl;
+		return false;
+	}
 
 
     vpLocation_ = getUniformLocation( "gVP" );
     cameraPosLocation_ = getUniformLocation( "gCameraPos" );
     colorMapLocation_ = getUniformLocation( "gColorMap" );
+	billboardSizeLocation_ = getUniformLocation("gBillboardSize");
 
-    if( INVALID_UNIFORM_LOCATION == vpLocation_ || cameraPosLocation_ == INVALID_UNIFORM_LOCATION || INVALID_UNIFORM_LOCATION == colorMapLocation_ )
+    if( INVALID_UNIFORM_LOCATION == vpLocation_ || cameraPosLocation_ == INVALID_UNIFORM_LOCATION || INVALID_UNIFORM_LOCATION == colorMapLocation_ || INVALID_UNIFORM_LOCATION == billboardSizeLocation_ )
         return false;
 
     return true;
@@ -112,4 +118,8 @@ void BillboardShader::setCameraPosition(const Vector3f &pos){
 
 void BillboardShader::setColorTextureUnit(unsigned textureUnitId){
     glUniform1i( colorMapLocation_, textureUnitId );
+}
+
+void BillboardShader::setBillboardSize(float sz){
+	glUniform1f(billboardSizeLocation_, sz);
 }

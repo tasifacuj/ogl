@@ -1,5 +1,7 @@
 #include "ShadowMapTechnique.hpp"
 
+#include <iostream>
+
 static constexpr const char* pVS = R"||(
 #version 330 core
 
@@ -43,8 +45,10 @@ bool ShadowMapTechnique::init(){
     if( not addShader( GL_FRAGMENT_SHADER, pFS ) )
         return false;
 
-    if( not finalize() )
-        return false;
+	if (not finalize()) {
+		std::cerr << "ShadowMapTechnique::finalize failed" << std::endl;
+		return false;
+	}
 
     WVPLocation_ = getUniformLocation( "gWVP" );
     textureLocation_ = getUniformLocation( "gShadowMap" );

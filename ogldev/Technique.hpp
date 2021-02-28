@@ -21,8 +21,9 @@ protected:
     bool addShader( GLenum shaderType, const char* shaderText );
     bool finalize();
     GLint getUniformLocation( const char* uniformName );
-private:
+protected:
     GLuint  shaderProgram_{ 0 };
+private:
     Shaders shadersObjList_;
 };
 

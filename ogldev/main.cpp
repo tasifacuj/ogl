@@ -6,6 +6,7 @@
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <ctime>
 
 #include "math_3d.h"
 #include "Pipeline.hpp"
@@ -15,76 +16,87 @@
 #include "GlutBackEnd.hpp"
 #include "Utils.hpp"
 #include "Mesh.hpp"
-#include "ShadowMapTechnique.hpp"
-#include "ShadowMapFBO.hpp"
+
 
 #include "EngineCommon.hpp"
-#include "BillboardList.hpp"
+#include "ParticleSystem.hpp"
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
 
+static long long get_current_time_ms() {
+	return GetTickCount();
+}
 
 // MESA_GLSL_VERSION_OVERRIDE=330 MESA_GL_VERSION_OVERRIDE=3.3 ./ogl
 
-class Main : public CallbackInterface{
+class Main : public CallbackInterface {
+private:
+	long long					currentTimeMillis_{ 0 };
+	LightTechnique				lightShader_;
+	std::unique_ptr< Camera >	pCamera_;
+	DirectionLight				dirLight_;
+	Mesh						ground_;
+	std::unique_ptr< Texture >	pTexture_;
+	std::unique_ptr< Texture >	pNormalMap_;
+	PersProjInfo				persProjInfo_;
+	ParticleSystem				particleSystem_;
+public:
+	Main() {
+		dirLight_.AmbientIntensity = 0.2f;
+		dirLight_.DiffuseIntensity = 0.8f;
+		dirLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
+		dirLight_.Direction = Vector3f(1.0f, 0.0f, 0.0f);
+
+		persProjInfo_.FOV = 60.0f;
+		persProjInfo_.Height = WINDOW_HEIGHT;
+		persProjInfo_.Width = WINDOW_WIDTH;
+		persProjInfo_.zNear = 1.0f;
+		persProjInfo_.zFar = 100.0f;
+
+		currentTimeMillis_ = get_current_time_ms();
+	}
 public: // == Main ==
     bool init(){
-        dirLight_.AmbientIntensity = 0.2f;
-        dirLight_.DiffuseIntensity = 0.8f;
-        dirLight_.Color = Vector3f( 1.0f, 1.0f, 1.0f );
-        dirLight_.Direction = Vector3f( 1.0f, 0.0f, 0.0f );
+		Vector3f pos(0.0f, 0.4f, -0.5f);
+		Vector3f target(0.0f, 0.2f, 1.0f);
+		Vector3f up(0.0f, 1.0f, 0.0f);
 
-        ppi_.FOV = 60.0f;
-        ppi_.Height = WINDOW_HEIGHT;
-        ppi_.Width = WINDOW_WIDTH;
-        ppi_.zNear = 1.0f;
-        ppi_.zFar = 100.0f;
+		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
+	
+		if (!lightShader_.init()) {
+			std::cerr << "Failed to initialize light shader" << std::endl;
+			return false;
+		}
 
-        Vector3f Pos(0.0f, 1.0f, -1.0f);
-        Vector3f Target(0.0f, -0.5f, 1.0f);
-        Vector3f Up(0.0, 1.0f, 0.0f);
+		lightShader_.enable();
+		lightShader_.setDirectionLight(dirLight_);
+		lightShader_.setColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);// 0 == GL_TEXTURE0, gColrMap = 0
+		lightShader_.setNormalMapTextureUnit(NORMAL_TEXTURE_UNIT_INDEX);
 
-        pCamera_ = std::make_unique< Camera >( WINDOW_WIDTH, WINDOW_HEIGHT, Pos, Target, Up);
-        
-        GLint max_vertices, max_components;
-        glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &max_vertices);
-        glGetIntegerv(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS, &max_components);
-        std::cout << "max_vertices = " << max_vertices << ", max_components = " << max_components << std::endl;
-// main shader
-        if( !lightEffectShader_.init() ){
-            std::cerr << "Failed to setup light technique" << std::endl;
-            return false;
-        }
+		if (!ground_.loadMesh("../Content/quad.obj")) {
+			std::cerr << "Failed to load ground" << std::endl;
+			return false;
+		}
 
-        lightEffectShader_.useProgram();
-        lightEffectShader_.setDirectionLight( dirLight_ );
-        lightEffectShader_.setColorTextureUnit( 0 );
-        lightEffectShader_.setNormalMapTextureUnit( 2 );
+		pTexture_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/bricks.jpg");
 
-        if( not ground_.loadMesh( "../Content/quad.obj" ) )
-            return false;
+		if (!pTexture_->load()) {
+			std::cerr << "Failed to load texture" << std::endl;
+			return false;
+		}
 
-        if( not bbl_.init( "../Content/monster_hellknight.png" ) ){
-            std::cerr << "Failed to initialize billboard" << std::endl;
-            return false;
-        }
+		pTexture_->bind(COLOR_TEXTURE_UNIT);
 
-        pTexture_ = std::make_unique< Texture >( GL_TEXTURE_2D, "../Content/bricks.jpg" );
+		pNormalMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/normal_map.jpg");
 
-        if( !pTexture_->load() ){
-            std::cerr << "Failed to initialize bricks texture" << std::endl;
-            return false;
-        }
+		if (!pNormalMap_->load()) {
+			std::cerr << "Failed to load normal map" << std::endl;
+			return false;
+		}
 
-        pTexture_->bind( COLOR_TEXTURE_UNIT );
-        pNormalMap_ = std::make_unique< Texture >( GL_TEXTURE_2D, "../Content/normal_map.jpg" );
-
-        if( not pNormalMap_->load() )
-            return false;
-
-        
-        return true;
+		Vector3f particlePos(0.0f, 0.0f, 1.0f);
+		return particleSystem_.init(particlePos);
     }
 
     void run(){
@@ -92,26 +104,31 @@ public: // == Main ==
     }
 public:// == CallbackInterface ==
     virtual void renderSceneCB() override{
-        pCamera_->onRender();
+		long long timeNow = get_current_time_ms();
+		assert(timeNow >= currentTimeMillis_);
+		unsigned deltaTMs = unsigned(timeNow - currentTimeMillis_);
+		currentTimeMillis_ = timeNow;
+		pCamera_->onRender();
 
-        glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-        lightEffectShader_.enable();
-        pTexture_->bind( COLOR_TEXTURE_UNIT );
-        pNormalMap_->bind( NORMAL_TEXTURE_UNIT );
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        Pipeline p;
-        p.scale( 20.0f, 20.0f, 1.0f );
-        p.rotate( 90.0f, 0.0f, 0.0f );
-        p.setCamera( pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp() );
-        p.setPerspectiveProjection( ppi_ );
+		lightShader_.enable();
+		pTexture_->bind(COLOR_TEXTURE_UNIT);
+		pNormalMap_->bind(NORMAL_TEXTURE_UNIT);
 
+		Pipeline p;
+		p.scale(20.0f, 20.0f, 1.0f);
+		p.rotate(90.0f, 0.0f, 0.0f);
+		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+		p.setPerspectiveProjection(persProjInfo_);
 
-        lightEffectShader_.setWVP( p.getWVPTransformation() );
-        lightEffectShader_.setWorldMatrix( p.getWorldTransformation() );
-        ground_.render();
-        bbl_.render( p.getViewProjectionTransformation(), pCamera_->getPos() );
+		lightShader_.setWVP(p.getWVPTransformation());
+		lightShader_.setWorldMatrix(p.getWorldTransformation());
 
-        glutSwapBuffers();
+		ground_.render();
+		particleSystem_.render(deltaTMs, p.getViewProjectionTransformation(), pCamera_->getPos());
+
+		glutSwapBuffers();
     }
 
     virtual void idleCB()override{
@@ -136,17 +153,6 @@ public:// == CallbackInterface ==
         pCamera_->onMouse( x, y );
     }
 
-
-private:
-    LightTechnique              lightEffectShader_;
-    std::unique_ptr< Camera >   pCamera_;
-    DirectionLight              dirLight_;
-    Mesh                        ground_;
-    std::unique_ptr< Texture >  pTexture_;
-    std::unique_ptr< Texture >  pNormalMap_;
-
-    PersProjInfo                ppi_;
-    BillboardList               bbl_;
 };
 
 int main( int argc, char** argv ){

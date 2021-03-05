@@ -10,6 +10,7 @@ public:
     virtual void passiveMouseCB( int x, int y ) = 0;
     virtual void renderSceneCB() = 0;
     virtual void idleCB()  = 0;
+	virtual void mouseCallback(int btn, int state, int x, int y) = 0;
 };
 
 #endif // CALLBACKINTERFACE_HPP

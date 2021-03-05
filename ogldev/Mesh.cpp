@@ -76,7 +76,8 @@ void Mesh::initMesh(unsigned index, const aiMesh *paiMesh){
         Vertex v( Vector3f( pPos->x, pPos->y, pPos->z )
             , Vector2f( pTexCoord->x, pTexCoord->y )
             , Vector3f( pNormal->x, pNormal->y, pNormal->z )
-            , Vector3f( pTangent->x, pTangent->y, pTangent->z ) );
+			, Vector3f(pTangent->x, pTangent->y, pTangent->z)
+            );
         vertices.emplace_back( v );
     }
 
@@ -132,31 +133,53 @@ bool Mesh::initMaterials(const aiScene *pScene, const std::string &filename){
     return rval;
 }
 
-void Mesh::render(){
+void Mesh::render(RenderCallbackInterface* rcb){
     glEnableVertexAttribArray( 0 );
     glEnableVertexAttribArray( 1 );
     glEnableVertexAttribArray( 2 );
-    glEnableVertexAttribArray( 3 );
+	glEnableVertexAttribArray(3);
 
     for( size_t idx = 0; idx < entries_.size(); idx++ ){
         glBindBuffer( GL_ARRAY_BUFFER, entries_[ idx ].VBO );
         glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), 0 );                     // pos
         glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )12 );   // texture
         glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )20 );   // normal
-        glVertexAttribPointer( 3, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )32 );   // tangent
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)32);   // tangent
+
         glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, entries_[ idx ].IBO );
         unsigned materialIdx = entries_[ idx ].MaterialIndex;
 
         if( materialIdx < textures_.size() && textures_[ materialIdx ] )
             textures_[ materialIdx ]->bind( GL_TEXTURE0 );
-//         else
-//            std::cout << "!!!there is no textures[" << materialIdx << "]" << std::endl;
+
+		if (rcb)
+			rcb->drawStartedCB(idx);
 
         glDrawElements( GL_TRIANGLES, entries_[ idx ].NumIndices, GL_UNSIGNED_INT, 0 );
     }
 
-    glDisableVertexAttribArray( 3 );
+	glDisableVertexAttribArray(3);
     glDisableVertexAttribArray( 2 );
     glDisableVertexAttribArray( 1 );
     glDisableVertexAttribArray( 0 );
+}
+
+void Mesh::render(unsigned drawIdx, unsigned primID) {
+	assert(drawIdx < entries_.size());
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	glBindBuffer(GL_ARRAY_BUFFER, entries_[drawIdx].VBO);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entries_[ drawIdx ].IBO);
+	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (const GLvoid*)(primID * 3 * sizeof(GLuint)));
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
 }

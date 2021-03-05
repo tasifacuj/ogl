@@ -27,12 +27,17 @@ static void idle_cb(){
     s_pCallbacks->idleCB();
 }
 
+static void mouse_cb(int btn, int state, int x, int y) {
+	s_pCallbacks->mouseCallback(btn, state, x, y);
+}
+
 static void init_callbacks(){
     glutDisplayFunc( render_scene_cb );
     glutIdleFunc( idle_cb );
     glutSpecialFunc( special_keyboard_cb );
     glutPassiveMotionFunc( passive_mouse_cb );
     glutKeyboardFunc( keyboard_cb );
+	glutMouseFunc(mouse_cb);
 }
 
 void GLUTBackendInit(int argc, char **argv){
@@ -70,6 +75,7 @@ void GLUTBackendRun(CallbackInterface *callbacks){
     glFrontFace( GL_CW );
     glCullFace( GL_BACK );
     glEnable( GL_CULL_FACE );
+	glDisable(GL_BLEND);
     s_pCallbacks = callbacks;
     init_callbacks();
     glutMainLoop();

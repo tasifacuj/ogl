@@ -13,18 +13,19 @@
 #include "Utils.hpp"
 #include "math_3d.h"
 #include "Texture.hpp"
+#include "interface/RenderCallbackInterface.hpp"
 
 struct Vertex{
     Vector3f Pos;
     Vector2f Tex;
     Vector3f Normal;
-    Vector3f Tangent;
+	Vector3f Tangent;
 
-    Vertex( Vector3f const& pos, Vector2f const& tex, Vector3f const& normal, Vector3f const& tangent )
+    Vertex( Vector3f const& pos, Vector2f const& tex, Vector3f const& normal, Vector3f const& tangent)
     : Pos( pos )
     , Tex( tex )
     , Normal( normal )
-    , Tangent( tangent )
+	, Tangent(tangent)
     {}
 };
 
@@ -55,7 +56,8 @@ public: // == CTORs ==
     }
 public: // == Mesh ==
     bool loadMesh( std::string const& filename );
-    void render();
+    void render(RenderCallbackInterface* rcb = nullptr);
+	void render(unsigned drawIdx, unsigned primeID);
 private:
     bool initFromScene( aiScene const* pScene, std::string const& filename );
     void initMesh( unsigned index, aiMesh const* paiMesh );

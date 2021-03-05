@@ -44,6 +44,10 @@ public: // == Pipeline ==
         worldPos_.z = z;
     }
 
+	void worldPos( Vector3f const& v ) {
+		worldPos(v.x, v.y, v.z);
+	}
+
     void rotate( float x, float y, float z ){
         rotateInfo_.x = x;
         rotateInfo_.y = y;

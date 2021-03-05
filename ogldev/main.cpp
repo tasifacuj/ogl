@@ -19,7 +19,9 @@
 
 
 #include "EngineCommon.hpp"
-#include "ParticleSystem.hpp"
+#include "shaders/PickingShader.hpp"
+#include "shaders/SimpleColorShader.hpp"
+#include "textures/PickingTexture.hpp"
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
@@ -32,34 +34,42 @@ static long long get_current_time_ms() {
 
 class Main : public CallbackInterface {
 private:
-	long long					currentTimeMillis_{ 0 };
 	LightTechnique				lightShader_;
+	PickingShader				pickingShader_;
+	SimpleColorShader			simpleColorShader_;
 	std::unique_ptr< Camera >	pCamera_;
 	DirectionLight				dirLight_;
-	Mesh						ground_;
-	std::unique_ptr< Texture >	pTexture_;
-	std::unique_ptr< Texture >	pNormalMap_;
+	Mesh						mesh_;
+	PickingTexture				pickingTexture_;
+	struct {
+		bool IsPressed;
+		int  x;
+		int y;
+	} leftMouseButton_;
+	Vector3f					worldPos_[2];
 	PersProjInfo				persProjInfo_;
-	ParticleSystem				particleSystem_;
+	
 public:
 	Main() {
-		dirLight_.AmbientIntensity = 0.2f;
-		dirLight_.DiffuseIntensity = 0.8f;
 		dirLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
-		dirLight_.Direction = Vector3f(1.0f, 0.0f, 0.0f);
+		dirLight_.AmbientIntensity = 1.0f;
+		dirLight_.DiffuseIntensity = 0.08f;
+		dirLight_.Direction = Vector3f(1.0f, -1.0f, 0.0f);
+		
+		leftMouseButton_.IsPressed = false;
+		worldPos_[0] = Vector3f(-10.0f, 0.0f, 5.0f);
+		worldPos_[1] = Vector3f(10.0f, 0.0f, 5.0f);
 
 		persProjInfo_.FOV = 60.0f;
 		persProjInfo_.Height = WINDOW_HEIGHT;
 		persProjInfo_.Width = WINDOW_WIDTH;
 		persProjInfo_.zNear = 1.0f;
 		persProjInfo_.zFar = 100.0f;
-
-		currentTimeMillis_ = get_current_time_ms();
 	}
 public: // == Main ==
     bool init(){
-		Vector3f pos(0.0f, 0.4f, -0.5f);
-		Vector3f target(0.0f, 0.2f, 1.0f);
+		Vector3f pos(0.0f, 5.0f, -22.0f);
+		Vector3f target(0.0f, -0.2f, 1.0f);
 		Vector3f up(0.0f, 1.0f, 0.0f);
 
 		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
@@ -70,64 +80,82 @@ public: // == Main ==
 		}
 
 		lightShader_.enable();
+		lightShader_.setColorTextureUnit( COLOR_TEXTURE_UNIT_INDEX );
 		lightShader_.setDirectionLight(dirLight_);
-		lightShader_.setColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);// 0 == GL_TEXTURE0, gColrMap = 0
-		lightShader_.setNormalMapTextureUnit(NORMAL_TEXTURE_UNIT_INDEX);
 
-		if (!ground_.loadMesh("../Content/quad.obj")) {
-			std::cerr << "Failed to load ground" << std::endl;
+		if (not pickingTexture_.init(WINDOW_WIDTH, WINDOW_HEIGHT))
 			return false;
-		}
 
-		pTexture_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/bricks.jpg");
-
-		if (!pTexture_->load()) {
-			std::cerr << "Failed to load texture" << std::endl;
+		if (!pickingShader_.init())
 			return false;
-		}
 
-		pTexture_->bind(COLOR_TEXTURE_UNIT);
-
-		pNormalMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/normal_map.jpg");
-
-		if (!pNormalMap_->load()) {
-			std::cerr << "Failed to load normal map" << std::endl;
+		if (!simpleColorShader_.init())
 			return false;
-		}
 
-		Vector3f particlePos(0.0f, 0.0f, 1.0f);
-		return particleSystem_.init(particlePos);
+		return mesh_.loadMesh("../Content/spider.obj");
     }
 
     void run(){
         GLUTBackendRun( this );
     }
 public:// == CallbackInterface ==
-    virtual void renderSceneCB() override{
-		long long timeNow = get_current_time_ms();
-		assert(timeNow >= currentTimeMillis_);
-		unsigned deltaTMs = unsigned(timeNow - currentTimeMillis_);
-		currentTimeMillis_ = timeNow;
-		pCamera_->onRender();
-
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		lightShader_.enable();
-		pTexture_->bind(COLOR_TEXTURE_UNIT);
-		pNormalMap_->bind(NORMAL_TEXTURE_UNIT);
-
+	void pickPhase() {
 		Pipeline p;
-		p.scale(20.0f, 20.0f, 1.0f);
-		p.rotate(90.0f, 0.0f, 0.0f);
+		p.scale(0.1f, 0.1f, 0.1f);
+		p.rotate(0.0f, 90.0f, 0.0f);
 		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
 		p.setPerspectiveProjection(persProjInfo_);
 
-		lightShader_.setWVP(p.getWVPTransformation());
-		lightShader_.setWorldMatrix(p.getWorldTransformation());
+		pickingTexture_.enableWriting();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		pickingShader_.enable();
 
-		ground_.render();
-		particleSystem_.render(deltaTMs, p.getViewProjectionTransformation(), pCamera_->getPos());
+		for (size_t idx = 0; idx < 2; idx++) {
+			p.worldPos(worldPos_[idx]);
+			pickingShader_.setObjectIndex(idx);
+			pickingShader_.setWVP(p.getWVPTransformation());
+			mesh_.render(&pickingShader_);
+		}
 
+		pickingTexture_.disableWriting();
+	}
+
+	void renderPhase() {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		Pipeline p;
+		p.scale(0.1f, 0.1f, 0.1f);
+		p.rotate(0.0f, 90.0f, 0.0f);
+		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+		p.setPerspectiveProjection(persProjInfo_);
+
+		if (leftMouseButton_.IsPressed) {
+			PickingTexture::PixelInfo pixel = pickingTexture_.readPixel(leftMouseButton_.x, WINDOW_HEIGHT - leftMouseButton_.y - 1);
+
+			if (pixel.PrimId != 0) {
+				simpleColorShader_.enable();
+				assert(pixel.ObjectId < ARRAY_SIZE_IN_ELEMENTS( worldPos_ ));
+				p.worldPos(worldPos_[ (unsigned)pixel.ObjectId ] );
+				simpleColorShader_.setWVP(p.getWVPTransformation());
+				mesh_.render((unsigned)pixel.DrawId, (unsigned)pixel.PrimId - 1);
+			}
+		}
+
+		lightShader_.enable();
+		lightShader_.setEyeWorldPosition(pCamera_->getPos());
+
+		for (size_t idx = 0; idx < 2; idx++) {
+			p.worldPos(worldPos_[idx]);
+			lightShader_.setWVP(p.getWVPTransformation());
+			lightShader_.setWorldMatrix(p.getWorldTransformation());
+			mesh_.render();
+		}
+	}
+
+    virtual void renderSceneCB() override{
+		pCamera_->onRender();
+		pickPhase();
+		renderPhase();
+		
 		glutSwapBuffers();
     }
 
@@ -141,9 +169,22 @@ public:// == CallbackInterface ==
 
     virtual void keyboardCB(unsigned char key, int, int)override{
         switch (key) {
+		case 27:
         case 'q':
             glutLeaveMainLoop();
             break;
+		case 'a':
+			dirLight_.AmbientIntensity += 0.05f;
+			break;
+		case 's':
+			dirLight_.AmbientIntensity -= 0.05f;
+			break;
+		case 'z':
+			dirLight_.DiffuseIntensity += 0.05f;
+			break;
+		case 'x':
+			dirLight_.DiffuseIntensity -= 0.05f;
+			break;
         default:
             break;
         }
@@ -152,6 +193,14 @@ public:// == CallbackInterface ==
     virtual void passiveMouseCB(int x, int y)override{
         pCamera_->onMouse( x, y );
     }
+
+	virtual void mouseCallback(int btn, int state, int x, int y) override {
+		if (btn == GLUT_LEFT_BUTTON) {
+			leftMouseButton_.IsPressed = (state == GLUT_DOWN);
+			leftMouseButton_.x = x;
+			leftMouseButton_.y = y;
+		}
+	}
 
 };
 

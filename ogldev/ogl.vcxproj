@@ -70,7 +70,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)Include;$(SolutionDir)Include\ImageMagick;$(SolutionDir)Include\Assimp;$(IncludePath);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir);$(SolutionDir)Include;$(SolutionDir)Include\ImageMagick;$(SolutionDir)Include\Assimp;$(IncludePath);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -138,6 +138,9 @@
     <ClCompile Include="math_3d.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="shaders\PickingShader.cpp" />
+    <ClCompile Include="shaders\SimpleColorShader.cpp" />
+    <ClCompile Include="textures\PickingTexture.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PSUpdateShader.cpp" />
     <ClCompile Include="RandomTexture.cpp" />
@@ -156,10 +159,14 @@
     <ClInclude Include="CubeMapTexture.hpp" />
     <ClInclude Include="EngineCommon.hpp" />
     <ClInclude Include="GlutBackEnd.hpp" />
+    <ClInclude Include="interface\RenderCallbackInterface.hpp" />
     <ClInclude Include="LightTechnique.hpp" />
     <ClInclude Include="math_3d.h" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="ParticleSystem.hpp" />
+    <ClInclude Include="shaders\PickingShader.hpp" />
+    <ClInclude Include="shaders\SimpleColorShader.hpp" />
+    <ClInclude Include="textures\PickingTexture.hpp" />
     <ClInclude Include="Pipeline.hpp" />
     <ClInclude Include="PSUpdateShader.hpp" />
     <ClInclude Include="RandomTexture.hpp" />

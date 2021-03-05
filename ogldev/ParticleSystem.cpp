@@ -59,7 +59,7 @@ bool ParticleSystem::init(Vector3f const& pos) {
 		std::cout << "psUpdateShader_.init failed" << std::endl;
 		return false;
 	}
-
+	 
 	psUpdateShader_.enable();
 	psUpdateShader_.setRandomTextureUnit(RANDOM_TEXTURE_UNIT_INDEX);
 	psUpdateShader_.setLauncherLifeTime(100.0f);

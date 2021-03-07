@@ -12,7 +12,7 @@
 #include "Pipeline.hpp"
 #include "Camera.hpp"
 #include "Texture.hpp"
-#include "LightTechnique.hpp"
+#include "shaders/LightingShader.hpp"
 #include "GlutBackEnd.hpp"
 #include "Utils.hpp"
 #include "Mesh.hpp"
@@ -22,6 +22,8 @@
 #include "shaders/PickingShader.hpp"
 #include "shaders/SimpleColorShader.hpp"
 #include "textures/PickingTexture.hpp"
+
+#include "ogl_keys.hpp"
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
@@ -34,127 +36,91 @@ static long long get_current_time_ms() {
 
 class Main : public CallbackInterface {
 private:
-	LightTechnique				lightShader_;
-	PickingShader				pickingShader_;
-	SimpleColorShader			simpleColorShader_;
+	LightingShader				lightShader_;
 	std::unique_ptr< Camera >	pCamera_;
-	DirectionLight				dirLight_;
+	DirectionalLight			dirLight_;
 	Mesh						mesh_;
-	PickingTexture				pickingTexture_;
-	struct {
-		bool IsPressed;
-		int  x;
-		int y;
-	} leftMouseButton_;
-	Vector3f					worldPos_[2];
 	PersProjInfo				persProjInfo_;
-	
+	std::unique_ptr< Texture >	pDisplacementMap_;
+	std::unique_ptr< Texture >	pColorMap_;
+	float						displacementFactor_;
+	bool						isWireFrame_;
 public:
 	Main() {
 		dirLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
 		dirLight_.AmbientIntensity = 1.0f;
-		dirLight_.DiffuseIntensity = 0.08f;
+		dirLight_.DiffuseIntensity = 0.01f;
 		dirLight_.Direction = Vector3f(1.0f, -1.0f, 0.0f);
-		
-		leftMouseButton_.IsPressed = false;
-		worldPos_[0] = Vector3f(-10.0f, 0.0f, 5.0f);
-		worldPos_[1] = Vector3f(10.0f, 0.0f, 5.0f);
 
 		persProjInfo_.FOV = 60.0f;
 		persProjInfo_.Height = WINDOW_HEIGHT;
 		persProjInfo_.Width = WINDOW_WIDTH;
 		persProjInfo_.zNear = 1.0f;
 		persProjInfo_.zFar = 100.0f;
+
+		displacementFactor_ = 0.25f;
+		isWireFrame_ = false;
 	}
 public: // == Main ==
     bool init(){
-		Vector3f pos(0.0f, 5.0f, -22.0f);
+		Vector3f pos(0.0f, 1.0f, -5.0f);
 		Vector3f target(0.0f, -0.2f, 1.0f);
 		Vector3f up(0.0f, 1.0f, 0.0f);
-
 		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
-	
+
 		if (!lightShader_.init()) {
-			std::cerr << "Failed to initialize light shader" << std::endl;
+			std::cerr << "Failed to load light shader" << std::endl;
 			return false;
 		}
 
+		GLint maxPatchVerices = 0;
+		glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVerices);
+		std::cout << "MAx supported patch vertices = " << maxPatchVerices << std::endl;
+		
+		glActiveTexture(GL_TEXTURE4);
+		pDisplacementMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/heightmap.jpg");
+
+		if (!pDisplacementMap_->load())
+			return false;
+
+		pDisplacementMap_->bind(DISPLACEMENT_TEXTURE_UNIT);
+
+		glActiveTexture(GL_TEXTURE0);
+		pColorMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/diffuse.jpg");
+
+		if (!pColorMap_->load())
+			return false;
+
+		pColorMap_->bind(COLOR_TEXTURE_UNIT);
+		
 		lightShader_.enable();
-		lightShader_.setColorTextureUnit( COLOR_TEXTURE_UNIT_INDEX );
-		lightShader_.setDirectionLight(dirLight_);
-
-		if (not pickingTexture_.init(WINDOW_WIDTH, WINDOW_HEIGHT))
-			return false;
-
-		if (!pickingShader_.init())
-			return false;
-
-		if (!simpleColorShader_.init())
-			return false;
-
-		return mesh_.loadMesh("../Content/spider.obj");
+		lightShader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);// say that we use GL_TEXTURE0
+		lightShader_.SetDisplacementMapTextureUnit(DISPLACEMENT_TEXTURE_UNIT_INDEX);
+		lightShader_.SetDirectionalLight(dirLight_);
+		lightShader_.SetDispFactor(displacementFactor_);
+		return mesh_.loadMesh("../Content/quad2.obj");
     }
 
     void run(){
         GLUTBackendRun( this );
     }
 public:// == CallbackInterface ==
-	void pickPhase() {
-		Pipeline p;
-		p.scale(0.1f, 0.1f, 0.1f);
-		p.rotate(0.0f, 90.0f, 0.0f);
-		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.setPerspectiveProjection(persProjInfo_);
-
-		pickingTexture_.enableWriting();
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		pickingShader_.enable();
-
-		for (size_t idx = 0; idx < 2; idx++) {
-			p.worldPos(worldPos_[idx]);
-			pickingShader_.setObjectIndex(idx);
-			pickingShader_.setWVP(p.getWVPTransformation());
-			mesh_.render(&pickingShader_);
-		}
-
-		pickingTexture_.disableWriting();
-	}
-
-	void renderPhase() {
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		Pipeline p;
-		p.scale(0.1f, 0.1f, 0.1f);
-		p.rotate(0.0f, 90.0f, 0.0f);
-		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.setPerspectiveProjection(persProjInfo_);
-
-		if (leftMouseButton_.IsPressed) {
-			PickingTexture::PixelInfo pixel = pickingTexture_.readPixel(leftMouseButton_.x, WINDOW_HEIGHT - leftMouseButton_.y - 1);
-
-			if (pixel.PrimId != 0) {
-				simpleColorShader_.enable();
-				assert(pixel.ObjectId < ARRAY_SIZE_IN_ELEMENTS( worldPos_ ));
-				p.worldPos(worldPos_[ (unsigned)pixel.ObjectId ] );
-				simpleColorShader_.setWVP(p.getWVPTransformation());
-				mesh_.render((unsigned)pixel.DrawId, (unsigned)pixel.PrimId - 1);
-			}
-		}
-
-		lightShader_.enable();
-		lightShader_.setEyeWorldPosition(pCamera_->getPos());
-
-		for (size_t idx = 0; idx < 2; idx++) {
-			p.worldPos(worldPos_[idx]);
-			lightShader_.setWVP(p.getWVPTransformation());
-			lightShader_.setWorldMatrix(p.getWorldTransformation());
-			mesh_.render();
-		}
-	}
+	
 
     virtual void renderSceneCB() override{
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		pCamera_->onRender();
-		pickPhase();
-		renderPhase();
+		Pipeline p;
+		p.scale(2.0f, 2.0f, 2.0f);
+		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+		p.setPerspectiveProjection(persProjInfo_);
+
+		lightShader_.enable();
+		lightShader_.SetEyeWorldPos(pCamera_->getPos());
+		lightShader_.SetVP(p.getViewProjectionTransformation());
+		lightShader_.SetWorldMatrix(p.getWorldTransformation());
+		lightShader_.SetDispFactor(displacementFactor_);
+		mesh_.renderPatches(nullptr);
 		
 		glutSwapBuffers();
     }
@@ -173,19 +139,23 @@ public:// == CallbackInterface ==
         case 'q':
             glutLeaveMainLoop();
             break;
-		case 'a':
-			dirLight_.AmbientIntensity += 0.05f;
+		case OGLDEV_KEY_PLUS:
+			displacementFactor_ += 0.01f;
 			break;
-		case 's':
-			dirLight_.AmbientIntensity -= 0.05f;
+		case OGLDEV_KEY_MINUS:
+			if( displacementFactor_ > 0.01f )
+				displacementFactor_ -= 0.01f;
 			break;
 		case 'z':
-			dirLight_.DiffuseIntensity += 0.05f;
-			break;
-		case 'x':
-			dirLight_.DiffuseIntensity -= 0.05f;
+			isWireFrame_ = !isWireFrame_;
+
+			if (isWireFrame_)
+				glPolygonMode(GL_FRONT, GL_LINE);
+			else
+				glPolygonMode(GL_FRONT, GL_FILL);
 			break;
         default:
+			pCamera_->onKeyboard(key);
             break;
         }
     }
@@ -194,13 +164,7 @@ public:// == CallbackInterface ==
         pCamera_->onMouse( x, y );
     }
 
-	virtual void mouseCallback(int btn, int state, int x, int y) override {
-		if (btn == GLUT_LEFT_BUTTON) {
-			leftMouseButton_.IsPressed = (state == GLUT_DOWN);
-			leftMouseButton_.x = x;
-			leftMouseButton_.y = y;
-		}
-	}
+	virtual void mouseCallback(int /*btn*/, int /*state*/, int /*x*/, int /*y*/) override {}
 
 };
 

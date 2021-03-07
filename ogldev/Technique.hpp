@@ -3,7 +3,7 @@
 
 #include <GL/glew.h>
 #include <list>
-
+#include <string>
 class Technique{
 public: // == TYPES ==
     using Shaders = std::list< GLuint >;
@@ -19,6 +19,7 @@ public:
     void useProgram();
 protected:
     bool addShader( GLenum shaderType, const char* shaderText );
+	bool loadShader(GLenum shaderType, std::string const& path);
     bool finalize();
     GLint getUniformLocation( const char* uniformName );
 protected:

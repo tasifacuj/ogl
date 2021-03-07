@@ -58,6 +58,7 @@ public: // == Mesh ==
     bool loadMesh( std::string const& filename );
     void render(RenderCallbackInterface* rcb = nullptr);
 	void render(unsigned drawIdx, unsigned primeID);
+	void renderPatches(RenderCallbackInterface* renderCallbackPtr);
 private:
     bool initFromScene( aiScene const* pScene, std::string const& filename );
     void initMesh( unsigned index, aiMesh const* paiMesh );

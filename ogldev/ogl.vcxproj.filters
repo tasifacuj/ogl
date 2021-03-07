@@ -81,6 +81,9 @@
     <ClCompile Include="shaders\SimpleColorShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shaders\LightingShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BillboardList.hpp">
@@ -158,5 +161,17 @@
     <ClInclude Include="shaders\SimpleColorShader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shaders\LightingShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ogl_keys.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\lighting_vs.glsl" />
+    <None Include="shaders\lighting_cs.glsl" />
+    <None Include="shaders\lighting_es.glsl" />
+    <None Include="shaders\lighting_fs.glsl" />
   </ItemGroup>
 </Project>

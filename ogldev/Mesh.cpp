@@ -164,6 +164,37 @@ void Mesh::render(RenderCallbackInterface* rcb){
     glDisableVertexAttribArray( 0 );
 }
 
+void Mesh::renderPatches(RenderCallbackInterface* renderCallbackPtr) {
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+	glEnableVertexAttribArray(3);
+
+	for (size_t idx = 0; idx < entries_.size(); idx++) {
+		glBindBuffer(GL_ARRAY_BUFFER, entries_[idx].VBO);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);                     // pos
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);   // texture
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);   // normal
+		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)32);   // tangent
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entries_[idx].IBO);
+		unsigned materialIdx = entries_[idx].MaterialIndex;
+
+		if (materialIdx < textures_.size() && textures_[materialIdx])
+			textures_[materialIdx]->bind(GL_TEXTURE0);
+
+		if (renderCallbackPtr)
+			renderCallbackPtr->drawStartedCB(idx);
+
+		glDrawElements(GL_PATCHES, entries_[idx].NumIndices, GL_UNSIGNED_INT, 0);
+	}
+
+	glDisableVertexAttribArray(3);
+	glDisableVertexAttribArray(2);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(0);
+}
+
 void Mesh::render(unsigned drawIdx, unsigned primID) {
 	assert(drawIdx < entries_.size());
 

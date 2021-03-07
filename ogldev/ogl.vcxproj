@@ -138,6 +138,7 @@
     <ClCompile Include="math_3d.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="shaders\LightingShader.cpp" />
     <ClCompile Include="shaders\PickingShader.cpp" />
     <ClCompile Include="shaders\SimpleColorShader.cpp" />
     <ClCompile Include="textures\PickingTexture.cpp" />
@@ -163,7 +164,9 @@
     <ClInclude Include="LightTechnique.hpp" />
     <ClInclude Include="math_3d.h" />
     <ClInclude Include="Mesh.hpp" />
+    <ClInclude Include="ogl_keys.hpp" />
     <ClInclude Include="ParticleSystem.hpp" />
+    <ClInclude Include="shaders\LightingShader.hpp" />
     <ClInclude Include="shaders\PickingShader.hpp" />
     <ClInclude Include="shaders\SimpleColorShader.hpp" />
     <ClInclude Include="textures\PickingTexture.hpp" />
@@ -177,6 +180,12 @@
     <ClInclude Include="Technique.hpp" />
     <ClInclude Include="Texture.hpp" />
     <ClInclude Include="Utils.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="shaders\lighting_cs.glsl" />
+    <None Include="shaders\lighting_es.glsl" />
+    <None Include="shaders\lighting_fs.glsl" />
+    <None Include="shaders\lighting_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

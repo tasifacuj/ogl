@@ -2,6 +2,27 @@
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+
+namespace {
+	bool read_file(std::string const& fname, std::string& outFile) {
+		std::fstream strm(fname.c_str());
+
+		if (strm.is_open()) {
+			std::string line;
+
+			while (std::getline(strm, line)) {
+				outFile.append(line).append( "\n" );
+			}
+
+			strm.close();
+			return true;
+		}else {
+			fprintf(stderr, "Failed to load %s\n", fname.c_str());
+			return false;
+		}
+	}
+}
 
 Technique::~Technique(){
     for( auto &s : shadersObjList_ ){
@@ -53,6 +74,16 @@ bool Technique::addShader(GLenum shaderType, const char *shaderText){
 
     glAttachShader( shaderProgram_, shaderObj );
     return true;
+}
+
+bool Technique::loadShader(GLenum shaderType, std::string const& path) {
+	std::string shaderText;
+
+	if (!read_file(path, shaderText)) {
+		return false;
+	}
+
+	return addShader(shaderType, shaderText.c_str());
 }
 
 bool Technique::finalize(){

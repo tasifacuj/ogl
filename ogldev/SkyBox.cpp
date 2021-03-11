@@ -29,7 +29,7 @@ bool SkyBox::init(const std::string &Directory
     if( not pCubemapTexture_->load() )
         return false;
 
-    return mesh_.loadMesh( "/home/tez/projects/ogl/Content/sphere.obj" );
+    return mesh_.LoadMesh( "/home/tez/projects/ogl/Content/sphere.obj" );
 }
 
 void SkyBox::render(){
@@ -52,7 +52,7 @@ void SkyBox::render(){
     p.setPerspectiveProjection( persProjInfo_.FOV, persProjInfo_.Width, persProjInfo_.Height, persProjInfo_.zNear, persProjInfo_.zFar );;
     skyboxShader_.setWVP( p.getWVPTransformation() );
     pCubemapTexture_->bind( GL_TEXTURE0 );
-    mesh_.render();
+    mesh_.Render( nullptr );
 
     glCullFace( oldCullFaceMode );
     glDepthFunc( oldDepthFuncMode );

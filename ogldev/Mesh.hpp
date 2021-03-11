@@ -14,56 +14,61 @@
 #include "math_3d.h"
 #include "Texture.hpp"
 #include "interface/RenderCallbackInterface.hpp"
+struct Vertex
+{
+	Vector3f m_pos;
+	Vector2f m_tex;
+	Vector3f m_normal;
 
-struct Vertex{
-    Vector3f Pos;
-    Vector2f Tex;
-    Vector3f Normal;
-	Vector3f Tangent;
+	Vertex() {}
 
-    Vertex( Vector3f const& pos, Vector2f const& tex, Vector3f const& normal, Vector3f const& tangent)
-    : Pos( pos )
-    , Tex( tex )
-    , Normal( normal )
-	, Tangent(tangent)
-    {}
+	Vertex(const Vector3f& pos, const Vector2f& tex, const Vector3f& normal)
+	{
+		m_pos = pos;
+		m_tex = tex;
+		m_normal = normal;
+	}
 };
 
-class Mesh final{
-public: // == TYPEs ==
-    struct MeshEntry{
-        GLuint VBO;
-        GLuint IBO;
-        unsigned NumIndices;
-        unsigned MaterialIndex;
 
-        MeshEntry();
-        ~MeshEntry();
+class Mesh
+{
+public:
+	Mesh();
 
-        bool init( std::vector< Vertex > const& vertices, std::vector< unsigned > const& indices );
-    };
+	~Mesh();
 
-    using TextuePtr = std::shared_ptr< Texture >;
-public: // == CONSTANTS ==
-    static constexpr int INVALID_MATERIAL =  0xFFFFFFFF;
-private: // == MEMBERs ==
-    std::vector< MeshEntry > entries_;
-    std::vector< TextuePtr > textures_;
-public: // == CTORs ==
-    Mesh() = default;
-    ~Mesh(){
-        clear();
-    }
-public: // == Mesh ==
-    bool loadMesh( std::string const& filename );
-    void render(RenderCallbackInterface* rcb = nullptr);
-	void render(unsigned drawIdx, unsigned primeID);
-	void renderPatches(RenderCallbackInterface* renderCallbackPtr);
+	bool LoadMesh(const std::string& Filename);
+
+	void Render(RenderCallbackInterface* pRenderCallbacks);
+
+	void Render(unsigned int DrawIndex, unsigned int PrimID);
+
 private:
-    bool initFromScene( aiScene const* pScene, std::string const& filename );
-    void initMesh( unsigned index, aiMesh const* paiMesh );
-    bool initMaterials( aiScene const* pScene, std::string const& filename );
-    void clear();
+	bool InitFromScene(const aiScene* pScene, const std::string& Filename);
+	void InitMesh(unsigned int Index, const aiMesh* paiMesh);
+	bool InitMaterials(const aiScene* pScene, const std::string& Filename);
+	void Clear();
+
+#define INVALID_MATERIAL 0xFFFFFFFF
+
+	struct MeshEntry {
+		MeshEntry();
+
+		~MeshEntry();
+
+		bool Init(const std::vector<Vertex>& Vertices,
+			const std::vector<unsigned int>& Indices);
+
+		GLuint VB;
+		GLuint IB;
+		unsigned int NumIndices;
+		unsigned int MaterialIndex;
+	};
+
+	std::vector<MeshEntry> m_Entries;
+	std::vector<Texture*> m_Textures;
 };
+
 
 #endif // MESH_HPP

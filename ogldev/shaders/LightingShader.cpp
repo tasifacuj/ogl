@@ -30,7 +30,7 @@ bool LightingShader::init()
 	m_VPLocation = getUniformLocation("gVP");
 	m_WorldMatrixLocation = getUniformLocation("gWorld");
 	m_colorTextureLocation = getUniformLocation("gColorMap");
-	m_displacementMapLocation = getUniformLocation("gDisplacementMap");
+	//m_displacementMapLocation = getUniformLocation("gDisplacementMap");
 	m_eyeWorldPosLocation = getUniformLocation("gEyeWorldPos");
 	m_dirLightLocation.Color = getUniformLocation("gDirectionalLight.Base.Color");
 	m_dirLightLocation.AmbientIntensity = getUniformLocation("gDirectionalLight.Base.AmbientIntensity");
@@ -40,13 +40,13 @@ bool LightingShader::init()
 	m_matSpecularPowerLocation = getUniformLocation("gSpecularPower");
 	m_numPointLightsLocation = getUniformLocation("gNumPointLights");
 	m_numSpotLightsLocation = getUniformLocation("gNumSpotLights");
-	m_dispFactorLocation = getUniformLocation("gDispFactor");
+	m_TLLocation = getUniformLocation("gTessellationLevel");
 
 	if (m_dirLightLocation.AmbientIntensity == INVALID_UNIFORM_LOCATION ||
 		m_VPLocation == INVALID_UNIFORM_LOCATION ||
 		m_WorldMatrixLocation == INVALID_UNIFORM_LOCATION ||
 		m_colorTextureLocation == INVALID_UNIFORM_LOCATION ||
-		m_displacementMapLocation == INVALID_UNIFORM_LOCATION ||
+		//m_displacementMapLocation == INVALID_UNIFORM_LOCATION ||
 		m_eyeWorldPosLocation == INVALID_UNIFORM_LOCATION ||
 		m_dirLightLocation.Color == INVALID_UNIFORM_LOCATION ||
 		m_dirLightLocation.DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
@@ -54,8 +54,8 @@ bool LightingShader::init()
 		m_matSpecularIntensityLocation == INVALID_UNIFORM_LOCATION ||
 		m_matSpecularPowerLocation == INVALID_UNIFORM_LOCATION ||
 		m_numPointLightsLocation == INVALID_UNIFORM_LOCATION ||
-		m_numSpotLightsLocation == INVALID_UNIFORM_LOCATION ||
-		m_dispFactorLocation == INVALID_UNIFORM_LOCATION) {
+		m_numSpotLightsLocation == INVALID_UNIFORM_LOCATION
+		|| INVALID_UNIFORM_LOCATION == m_TLLocation) {
 		return false;
 	}
 
@@ -225,7 +225,6 @@ void LightingShader::SetSpotLights(unsigned int NumLights, const SpotLight* pLig
 }
 
 
-void LightingShader::SetDispFactor(float Factor)
-{
-	glUniform1f(m_dispFactorLocation, Factor);
+void LightingShader::SetTesselationLevel(float l){
+	glUniform1f(m_TLLocation, l);
 }

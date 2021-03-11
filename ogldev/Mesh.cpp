@@ -1,214 +1,257 @@
-#include "Mesh.hpp"
+/*
+
+	Copyright 2011 Etay Meiri
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+
+
+
+#include "mesh.hpp"
+#include "Utils.hpp"
+#include "EngineCommon.hpp"
 
 #include <cassert>
-#include <iostream>
 
 Mesh::MeshEntry::MeshEntry()
-: VBO( INVALID_OGL_VALUE )
-, IBO( INVALID_OGL_VALUE )
-, NumIndices( 0 )
-, MaterialIndex( INVALID_MATERIAL )
-{}
+{
+	VB = INVALID_OGL_VALUE;
+	IB = INVALID_OGL_VALUE;
+	NumIndices = 0;
+	MaterialIndex = INVALID_MATERIAL;
+};
 
-Mesh::MeshEntry::~MeshEntry(){
-    if( VBO != INVALID_OGL_VALUE )
-        glDeleteBuffers( 1, &VBO );
-
-    if( IBO != INVALID_OGL_VALUE )
-        glDeleteBuffers( 1, &IBO );
-}
-
-bool Mesh::MeshEntry::init(const std::vector<Vertex> &vertices, const std::vector<unsigned> &indices){
-    NumIndices = indices.size();
-
-    glGenBuffers( 1, &VBO );
-    glBindBuffer( GL_ARRAY_BUFFER, VBO );
-    glBufferData( GL_ARRAY_BUFFER, sizeof( Vertex ) * vertices.size(), &vertices[ 0 ], GL_STATIC_DRAW );
-
-    glGenBuffers( 1, &IBO );
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, IBO );
-    glBufferData( GL_ELEMENT_ARRAY_BUFFER, sizeof( unsigned ) * NumIndices, &indices[ 0 ], GL_STATIC_DRAW );
-
-    return true;
-}
-
-void Mesh::clear(){
-    textures_.clear();
-}
-
-bool Mesh::loadMesh(const std::string &filename){
-    clear();
-    Assimp::Importer importer;
-    aiScene const* pScene = importer.ReadFile( filename, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace );
-
-    if( pScene ){
-        return initFromScene( pScene, filename );
-    }else{
-        std::cerr << "Error parsing " << filename << ": " << importer.GetErrorString() << std::endl;
-        return false;
-    }
-}
-
-bool Mesh::initFromScene(const aiScene *pScene, const std::string &filename){
-    std::cout << "mNumMeshes = " << pScene->mNumMeshes << ", mNumMaterials = " << pScene->mNumMaterials << std::endl;
-    entries_.resize( pScene->mNumMeshes );
-    textures_.resize( pScene->mNumMaterials );
-
-    for( unsigned idx = 0; idx < entries_.size(); idx++ ){
-        aiMesh const* pMesh = pScene->mMeshes[ idx ];
-        initMesh( idx, pMesh );
-    }
-
-    return initMaterials( pScene, filename );
-}
-
-void Mesh::initMesh(unsigned index, const aiMesh *paiMesh){
-    entries_[ index ].MaterialIndex = paiMesh->mMaterialIndex;
-    std::vector< Vertex > vertices;
-    std::vector< unsigned > indices;
-    const aiVector3D zero3D( 0.0f, 0.0f, 0.0f );
-
-    for( size_t idx = 0; idx < paiMesh->mNumVertices; idx++ ){
-        aiVector3D const* pPos = &( paiMesh->mVertices[ idx ] );
-        aiVector3D const* pNormal = &( paiMesh->mNormals[ idx ] );
-        aiVector3D const* pTexCoord = paiMesh->HasTextureCoords( 0 ) ? &( paiMesh->mTextureCoords[ 0 ][ idx ] ) : &zero3D;
-        aiVector3D const* pTangent = &( paiMesh->mTangents[ idx ] );
-        Vertex v( Vector3f( pPos->x, pPos->y, pPos->z )
-            , Vector2f( pTexCoord->x, pTexCoord->y )
-            , Vector3f( pNormal->x, pNormal->y, pNormal->z )
-			, Vector3f(pTangent->x, pTangent->y, pTangent->z)
-            );
-        vertices.emplace_back( v );
-    }
-
-    for( size_t idx = 0; idx < paiMesh->mNumFaces; idx++ ){
-        aiFace const& face = paiMesh->mFaces[ idx ];
-        assert( face.mNumIndices == 3 );
-        indices.push_back( face.mIndices[ 0 ] );
-        indices.push_back( face.mIndices[ 1 ] );
-        indices.push_back( face.mIndices[ 2 ] );
-    }
-
-    entries_[ index ].init( vertices, indices );
-}
-
-bool Mesh::initMaterials(const aiScene *pScene, const std::string &filename){
-    std::string::size_type slashIdx = filename.find_last_of( "/" );
-    std::string dir;
-
-    if( slashIdx == std::string::npos )
-        dir = ".";
-    else if( slashIdx == 0 )
-        dir = "/";
-    else
-        dir = filename.substr( 0, slashIdx );
-
-    bool rval = true;
-
-    for( size_t idx = 0; idx < pScene->mNumMaterials; idx++ ){
-        aiMaterial const* pMaterial = pScene->mMaterials[ idx ];
-
-        if( pMaterial->GetTextureCount( aiTextureType_DIFFUSE ) > 0 ){
-            aiString path;
-
-            if( pMaterial->GetTexture( aiTextureType_DIFFUSE, 0, &path ) == AI_SUCCESS ){
-                std::cout << "path = " << path.data << std::endl;
-                std::string fullPath = dir + "/" + path.data;
-                 std::replace( fullPath.begin(), fullPath.end(), '\\', '/');
-
-
-                textures_[ idx ] = std::make_shared< Texture >( GL_TEXTURE_2D, fullPath );
-
-                if( !textures_[ idx ]->load() ){
-                    std::cerr << "Failed to load texture " << fullPath << std::endl;
-                    textures_[ idx ].reset();
-                    rval = false;
-                }else{
-                    std::cout << "Loaded texture for idx " << idx << " and path " << fullPath << std::endl;
-                }
-            }
-        }
-    }
-
-    return rval;
-}
-
-void Mesh::render(RenderCallbackInterface* rcb){
-    glEnableVertexAttribArray( 0 );
-    glEnableVertexAttribArray( 1 );
-    glEnableVertexAttribArray( 2 );
-	glEnableVertexAttribArray(3);
-
-    for( size_t idx = 0; idx < entries_.size(); idx++ ){
-        glBindBuffer( GL_ARRAY_BUFFER, entries_[ idx ].VBO );
-        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), 0 );                     // pos
-        glVertexAttribPointer( 1, 2, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )12 );   // texture
-        glVertexAttribPointer( 2, 3, GL_FLOAT, GL_FALSE, sizeof( Vertex ), ( const GLvoid* )20 );   // normal
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)32);   // tangent
-
-        glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, entries_[ idx ].IBO );
-        unsigned materialIdx = entries_[ idx ].MaterialIndex;
-
-        if( materialIdx < textures_.size() && textures_[ materialIdx ] )
-            textures_[ materialIdx ]->bind( GL_TEXTURE0 );
-
-		if (rcb)
-			rcb->drawStartedCB(idx);
-
-        glDrawElements( GL_TRIANGLES, entries_[ idx ].NumIndices, GL_UNSIGNED_INT, 0 );
-    }
-
-	glDisableVertexAttribArray(3);
-    glDisableVertexAttribArray( 2 );
-    glDisableVertexAttribArray( 1 );
-    glDisableVertexAttribArray( 0 );
-}
-
-void Mesh::renderPatches(RenderCallbackInterface* renderCallbackPtr) {
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
-	glEnableVertexAttribArray(2);
-	glEnableVertexAttribArray(3);
-
-	for (size_t idx = 0; idx < entries_.size(); idx++) {
-		glBindBuffer(GL_ARRAY_BUFFER, entries_[idx].VBO);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);                     // pos
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);   // texture
-		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);   // normal
-		glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)32);   // tangent
-
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entries_[idx].IBO);
-		unsigned materialIdx = entries_[idx].MaterialIndex;
-
-		if (materialIdx < textures_.size() && textures_[materialIdx])
-			textures_[materialIdx]->bind(GL_TEXTURE0);
-
-		if (renderCallbackPtr)
-			renderCallbackPtr->drawStartedCB(idx);
-
-		glDrawElements(GL_PATCHES, entries_[idx].NumIndices, GL_UNSIGNED_INT, 0);
+Mesh::MeshEntry::~MeshEntry()
+{
+	if (VB != INVALID_OGL_VALUE)
+	{
+		glDeleteBuffers(1, &VB);
 	}
 
-	glDisableVertexAttribArray(3);
-	glDisableVertexAttribArray(2);
-	glDisableVertexAttribArray(1);
-	glDisableVertexAttribArray(0);
+	if (IB != INVALID_OGL_VALUE)
+	{
+		glDeleteBuffers(1, &IB);
+	}
 }
 
-void Mesh::render(unsigned drawIdx, unsigned primID) {
-	assert(drawIdx < entries_.size());
+bool Mesh::MeshEntry::Init(const std::vector<Vertex>& Vertices,
+	const std::vector<unsigned int>& Indices)
+{
+	NumIndices = Indices.size();
+
+	glGenBuffers(1, &VB);
+	glBindBuffer(GL_ARRAY_BUFFER, VB);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * Vertices.size(), &Vertices[0], GL_STATIC_DRAW);
+
+	glGenBuffers(1, &IB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IB);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * NumIndices, &Indices[0], GL_STATIC_DRAW);
+
+	return GLCheckError();
+}
+
+Mesh::Mesh()
+{
+}
+
+
+Mesh::~Mesh()
+{
+	Clear();
+}
+
+
+void Mesh::Clear()
+{
+	for (unsigned int i = 0; i < m_Textures.size(); i++) {
+		SAFE_DELETE(m_Textures[i]);
+	}
+}
+
+
+bool Mesh::LoadMesh(const std::string& Filename)
+{
+	// Release the previously loaded mesh (if it exists)
+	Clear();
+
+	bool Ret = false;
+	Assimp::Importer Importer;
+
+	const aiScene* pScene = Importer.ReadFile(Filename.c_str(), aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
+
+	if (pScene) {
+		Ret = InitFromScene(pScene, Filename);
+	}
+	else {
+		printf("Error parsing '%s': '%s'\n", Filename.c_str(), Importer.GetErrorString());
+	}
+
+	return Ret;
+}
+
+bool Mesh::InitFromScene(const aiScene* pScene, const std::string& Filename)
+{
+	m_Entries.resize(pScene->mNumMeshes);
+	m_Textures.resize(pScene->mNumMaterials);
+
+	// Initialize the meshes in the scene one by one
+	for (unsigned int i = 0; i < m_Entries.size(); i++) {
+		const aiMesh* paiMesh = pScene->mMeshes[i];
+		InitMesh(i, paiMesh);
+	}
+
+	return InitMaterials(pScene, Filename);
+}
+
+void Mesh::InitMesh(unsigned int Index, const aiMesh* paiMesh)
+{
+	m_Entries[Index].MaterialIndex = paiMesh->mMaterialIndex;
+
+	std::vector<Vertex> Vertices;
+	std::vector<unsigned int> Indices;
+
+	const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
+
+	for (unsigned int i = 0; i < paiMesh->mNumVertices; i++) {
+		const aiVector3D* pPos = &(paiMesh->mVertices[i]);
+		const aiVector3D* pNormal = &(paiMesh->mNormals[i]);
+		const aiVector3D* pTexCoord = paiMesh->HasTextureCoords(0) ? &(paiMesh->mTextureCoords[0][i]) : &Zero3D;
+
+		Vertex v(Vector3f(pPos->x, pPos->y, pPos->z),
+			Vector2f(pTexCoord->x, pTexCoord->y),
+			Vector3f(pNormal->x, pNormal->y, pNormal->z));
+
+		Vertices.push_back(v);
+	}
+
+	for (unsigned int i = 0; i < paiMesh->mNumFaces; i++) {
+		const aiFace& Face = paiMesh->mFaces[i];
+		assert(Face.mNumIndices == 3);
+		Indices.push_back(Face.mIndices[0]);
+		Indices.push_back(Face.mIndices[1]);
+		Indices.push_back(Face.mIndices[2]);
+	}
+
+	m_Entries[Index].Init(Vertices, Indices);
+}
+
+bool Mesh::InitMaterials(const aiScene* pScene, const std::string& Filename)
+{
+	// Extract the directory part from the file name
+	std::string::size_type SlashIndex = Filename.find_last_of("/");
+	std::string Dir;
+
+	if (SlashIndex == std::string::npos) {
+		Dir = ".";
+	}
+	else if (SlashIndex == 0) {
+		Dir = "/";
+	}
+	else {
+		Dir = Filename.substr(0, SlashIndex);
+	}
+
+	bool Ret = true;
+
+	// Initialize the materials
+	for (unsigned int i = 0; i < pScene->mNumMaterials; i++) {
+		const aiMaterial* pMaterial = pScene->mMaterials[i];
+
+		m_Textures[i] = NULL;
+
+		if (pMaterial->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
+			aiString Path;
+
+			if (pMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &Path, NULL, NULL, NULL, NULL, NULL) == AI_SUCCESS) {
+				std::string p(Path.data);
+
+				if (p.substr(0, 2) == ".\\") {
+					p = p.substr(2, p.size() - 2);
+				}
+
+				std::string FullPath = Dir + "/" + p;
+
+				m_Textures[i] = new Texture(GL_TEXTURE_2D, FullPath.c_str());
+
+				if (!m_Textures[i]->load()) {
+					printf("Error loading texture '%s'\n", FullPath.c_str());
+					delete m_Textures[i];
+					m_Textures[i] = NULL;
+					Ret = false;
+				}
+				else {
+					printf("Loaded texture '%s'\n", FullPath.c_str());
+				}
+			}
+		}
+	}
+
+	return Ret;
+}
+
+
+void Mesh::Render(RenderCallbackInterface* pRenderCallbacks)
+{
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	for (unsigned int i = 0; i < m_Entries.size(); i++) {
+		glBindBuffer(GL_ARRAY_BUFFER, m_Entries[i].VB);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
+		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
+
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Entries[i].IB);
+
+		const unsigned int MaterialIndex = m_Entries[i].MaterialIndex;
+
+		if (MaterialIndex < m_Textures.size() && m_Textures[MaterialIndex]) {
+			m_Textures[MaterialIndex]->bind(COLOR_TEXTURE_UNIT);
+		}
+
+		if (pRenderCallbacks) {
+			pRenderCallbacks->drawStartedCB(i);
+		}
+
+		glDrawElements(GL_PATCHES, m_Entries[i].NumIndices, GL_UNSIGNED_INT, 0);
+	}
+
+	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
+	glDisableVertexAttribArray(2);
+}
+
+
+void Mesh::Render(unsigned int DrawIndex, unsigned int PrimID)
+{
+	assert(DrawIndex < m_Entries.size());
 
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
 
-	glBindBuffer(GL_ARRAY_BUFFER, entries_[drawIdx].VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, m_Entries[DrawIndex].VB);
+
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)12);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)20);
 
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, entries_[ drawIdx ].IBO);
-	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (const GLvoid*)(primID * 3 * sizeof(GLuint)));
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_Entries[DrawIndex].IB);
+
+	glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, (const GLvoid*)(PrimID * 3 * sizeof(GLuint)));
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);

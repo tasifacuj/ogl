@@ -7,4 +7,7 @@
 
 #define GLCheckError() (glGetError() == GL_NO_ERROR)
 
+
+#define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
+
 #endif // UTILS_HPP

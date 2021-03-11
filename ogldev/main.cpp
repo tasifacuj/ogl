@@ -25,8 +25,8 @@
 
 #include "ogl_keys.hpp"
 
-#define WINDOW_WIDTH 1920
-#define WINDOW_HEIGHT 1080
+#define WINDOW_WIDTH  1680
+#define WINDOW_HEIGHT 1050
 
 static long long get_current_time_ms() {
 	return GetTickCount();
@@ -41,16 +41,14 @@ private:
 	DirectionalLight			dirLight_;
 	Mesh						mesh_;
 	PersProjInfo				persProjInfo_;
-	std::unique_ptr< Texture >	pDisplacementMap_;
-	std::unique_ptr< Texture >	pColorMap_;
-	float						displacementFactor_;
+	float						tesselationLevel_;
 	bool						isWireFrame_;
 public:
 	Main() {
 		dirLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
 		dirLight_.AmbientIntensity = 1.0f;
-		dirLight_.DiffuseIntensity = 0.01f;
-		dirLight_.Direction = Vector3f(1.0f, -1.0f, 0.0f);
+		dirLight_.DiffuseIntensity = 0.9f;
+		dirLight_.Direction = Vector3f(0.0f, 0.0f, 1.0f);
 
 		persProjInfo_.FOV = 60.0f;
 		persProjInfo_.Height = WINDOW_HEIGHT;
@@ -58,7 +56,7 @@ public:
 		persProjInfo_.zNear = 1.0f;
 		persProjInfo_.zFar = 100.0f;
 
-		displacementFactor_ = 0.25f;
+		tesselationLevel_ = 5.0f;
 		isWireFrame_ = false;
 	}
 public: // == Main ==
@@ -77,28 +75,12 @@ public: // == Main ==
 		glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVerices);
 		std::cout << "MAx supported patch vertices = " << maxPatchVerices << std::endl;
 		
-		glActiveTexture(GL_TEXTURE4);
-		pDisplacementMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/heightmap.jpg");
-
-		if (!pDisplacementMap_->load())
-			return false;
-
-		pDisplacementMap_->bind(DISPLACEMENT_TEXTURE_UNIT);
-
-		glActiveTexture(GL_TEXTURE0);
-		pColorMap_ = std::make_unique< Texture >(GL_TEXTURE_2D, "../Content/diffuse.jpg");
-
-		if (!pColorMap_->load())
-			return false;
-
-		pColorMap_->bind(COLOR_TEXTURE_UNIT);
 		
 		lightShader_.enable();
 		lightShader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);// say that we use GL_TEXTURE0
-		lightShader_.SetDisplacementMapTextureUnit(DISPLACEMENT_TEXTURE_UNIT_INDEX);
+		
 		lightShader_.SetDirectionalLight(dirLight_);
-		lightShader_.SetDispFactor(displacementFactor_);
-		return mesh_.loadMesh("../Content/quad2.obj");
+		return mesh_.LoadMesh("../Content/monkey.obj");
     }
 
     void run(){
@@ -109,19 +91,28 @@ public:// == CallbackInterface ==
 
     virtual void renderSceneCB() override{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		pCamera_->onRender();
+
 		Pipeline p;
+		p.worldPos(-3.0f, 0.0f, 0.0f);
 		p.scale(2.0f, 2.0f, 2.0f);
+		p.rotate(-90.0f, 15.0f, 0.0f);
 		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
 		p.setPerspectiveProjection(persProjInfo_);
-
-		lightShader_.enable();
 		lightShader_.SetEyeWorldPos(pCamera_->getPos());
+
 		lightShader_.SetVP(p.getViewProjectionTransformation());
 		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		lightShader_.SetDispFactor(displacementFactor_);
-		mesh_.renderPatches(nullptr);
-		
+		lightShader_.SetTesselationLevel(tesselationLevel_);
+		mesh_.Render(nullptr);
+
+		p.worldPos(3.0f, 0.0f, 0.0f);
+		p.rotate(-90.0f, -15.0f, 0.0f);
+		lightShader_.SetVP(p.getViewProjectionTransformation());
+		lightShader_.SetWorldMatrix(p.getWorldTransformation());
+		lightShader_.SetTesselationLevel(1.0f);
+		mesh_.Render( nullptr );
 		glutSwapBuffers();
     }
 
@@ -140,11 +131,11 @@ public:// == CallbackInterface ==
             glutLeaveMainLoop();
             break;
 		case OGLDEV_KEY_PLUS:
-			displacementFactor_ += 0.01f;
+			tesselationLevel_ += 1.0f;
 			break;
 		case OGLDEV_KEY_MINUS:
-			if( displacementFactor_ > 0.01f )
-				displacementFactor_ -= 0.01f;
+			if(tesselationLevel_ > 2.0f )
+				tesselationLevel_ -= 1.0f;
 			break;
 		case 'z':
 			isWireFrame_ = !isWireFrame_;

@@ -80,7 +80,7 @@ public:
 	void SetEyeWorldPos(const Vector3f& EyeWorldPos);
 	void SetMatSpecularIntensity(float Intensity);
 	void SetMatSpecularPower(float Power);
-	void SetDispFactor(float Factor);
+	void SetTesselationLevel(float Factor);
 
 private:
 
@@ -93,7 +93,7 @@ private:
 	GLuint m_matSpecularPowerLocation;
 	GLuint m_numPointLightsLocation;
 	GLuint m_numSpotLightsLocation;
-	GLuint m_dispFactorLocation;
+	GLuint m_TLLocation;
 
 	struct {
 		GLuint Color;

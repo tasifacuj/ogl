@@ -84,6 +84,9 @@
     <ClCompile Include="shaders\LightingShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="import\BasicMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BillboardList.hpp">
@@ -173,5 +176,7 @@
     <None Include="shaders\lighting_cs.glsl" />
     <None Include="shaders\lighting_es.glsl" />
     <None Include="shaders\lighting_fs.glsl" />
+    <None Include="shaders\basic_lighting_vs.glsl" />
+    <None Include="shaders\basic_lighting_fs.glsl" />
   </ItemGroup>
 </Project>

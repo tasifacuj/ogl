@@ -7,19 +7,11 @@ bool LightingShader::init()
 		return false;
 	}
 
-	if (!loadShader(GL_VERTEX_SHADER, "shaders/lighting_vs.glsl")) {
+	if (!loadShader(GL_VERTEX_SHADER, "shaders/basic_lighting_vs.glsl")) {
 		return false;
 	}
 
-	if (!loadShader(GL_TESS_CONTROL_SHADER, "shaders/lighting_cs.glsl")) {
-		return false;
-	}
-
-	if (!loadShader(GL_TESS_EVALUATION_SHADER, "shaders/lighting_es.glsl")) {
-		return false;
-	}
-
-	if (!loadShader(GL_FRAGMENT_SHADER, "shaders/lighting_fs.glsl")) {
+	if (!loadShader(GL_FRAGMENT_SHADER, "shaders/basic_lighting_fs.glsl")) {
 		return false;
 	}
 
@@ -27,7 +19,7 @@ bool LightingShader::init()
 		return false;
 	}
 
-	m_VPLocation = getUniformLocation("gVP");
+	m_WVPLocation = getUniformLocation("gWVP");
 	m_WorldMatrixLocation = getUniformLocation("gWorld");
 	m_colorTextureLocation = getUniformLocation("gColorMap");
 	//m_displacementMapLocation = getUniformLocation("gDisplacementMap");
@@ -40,10 +32,9 @@ bool LightingShader::init()
 	m_matSpecularPowerLocation = getUniformLocation("gSpecularPower");
 	m_numPointLightsLocation = getUniformLocation("gNumPointLights");
 	m_numSpotLightsLocation = getUniformLocation("gNumSpotLights");
-	m_TLLocation = getUniformLocation("gTessellationLevel");
 
 	if (m_dirLightLocation.AmbientIntensity == INVALID_UNIFORM_LOCATION ||
-		m_VPLocation == INVALID_UNIFORM_LOCATION ||
+		m_WVPLocation == INVALID_UNIFORM_LOCATION ||
 		m_WorldMatrixLocation == INVALID_UNIFORM_LOCATION ||
 		m_colorTextureLocation == INVALID_UNIFORM_LOCATION ||
 		//m_displacementMapLocation == INVALID_UNIFORM_LOCATION ||
@@ -55,7 +46,7 @@ bool LightingShader::init()
 		m_matSpecularPowerLocation == INVALID_UNIFORM_LOCATION ||
 		m_numPointLightsLocation == INVALID_UNIFORM_LOCATION ||
 		m_numSpotLightsLocation == INVALID_UNIFORM_LOCATION
-		|| INVALID_UNIFORM_LOCATION == m_TLLocation) {
+		) {
 		return false;
 	}
 
@@ -141,9 +132,9 @@ bool LightingShader::init()
 }
 
 
-void LightingShader::SetVP(const Matrix4f& VP)
+void LightingShader::SetWVP(const Matrix4f& WVP)
 {
-	glUniformMatrix4fv(m_VPLocation, 1, GL_TRUE, (const GLfloat*)VP.m);
+	glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, (const GLfloat*)WVP.m);
 }
 
 
@@ -225,6 +216,3 @@ void LightingShader::SetSpotLights(unsigned int NumLights, const SpotLight* pLig
 }
 
 
-void LightingShader::SetTesselationLevel(float l){
-	glUniform1f(m_TLLocation, l);
-}

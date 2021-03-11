@@ -23,6 +23,8 @@
 #include "shaders/SimpleColorShader.hpp"
 #include "textures/PickingTexture.hpp"
 
+#include "import/BasicMesh.hpp"
+
 #include "ogl_keys.hpp"
 
 #define WINDOW_WIDTH  1680
@@ -38,49 +40,54 @@ class Main : public CallbackInterface {
 private:
 	LightingShader				lightShader_;
 	std::unique_ptr< Camera >	pCamera_;
-	DirectionalLight			dirLight_;
-	Mesh						mesh_;
+	float						scale_{ 0.0f };
+	DirectionalLight			directionalLight_;
+	BasicMesh					mesh1_;
+	BasicMesh					mesh2_;
+	BasicMesh					mesh3_;
 	PersProjInfo				persProjInfo_;
-	float						tesselationLevel_;
-	bool						isWireFrame_;
 public:
 	Main() {
-		dirLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
-		dirLight_.AmbientIntensity = 1.0f;
-		dirLight_.DiffuseIntensity = 0.9f;
-		dirLight_.Direction = Vector3f(0.0f, 0.0f, 1.0f);
+		directionalLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
+		directionalLight_.AmbientIntensity = 0.25f;
+		directionalLight_.DiffuseIntensity = 0.9f;
+		directionalLight_.Direction = Vector3f(1.0f, 0.0f, 0.0f);
 
 		persProjInfo_.FOV = 60.0f;
 		persProjInfo_.Height = WINDOW_HEIGHT;
 		persProjInfo_.Width = WINDOW_WIDTH;
 		persProjInfo_.zNear = 1.0f;
 		persProjInfo_.zFar = 100.0f;
-
-		tesselationLevel_ = 5.0f;
-		isWireFrame_ = false;
 	}
 public: // == Main ==
     bool init(){
-		Vector3f pos(0.0f, 1.0f, -5.0f);
+		Vector3f pos(3.0f, 7.0f, -10.0f);
 		Vector3f target(0.0f, -0.2f, 1.0f);
 		Vector3f up(0.0f, 1.0f, 0.0f);
-		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
 
+		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
+		
 		if (!lightShader_.init()) {
-			std::cerr << "Failed to load light shader" << std::endl;
+			std::cerr << "Failed to load basic light shader\n";
 			return false;
 		}
 
-		GLint maxPatchVerices = 0;
-		glGetIntegerv(GL_MAX_PATCH_VERTICES, &maxPatchVerices);
-		std::cout << "MAx supported patch vertices = " << maxPatchVerices << std::endl;
-		
-		
 		lightShader_.enable();
-		lightShader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);// say that we use GL_TEXTURE0
-		
-		lightShader_.SetDirectionalLight(dirLight_);
-		return mesh_.LoadMesh("../Content/monkey.obj");
+		lightShader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+		lightShader_.SetDirectionalLight( directionalLight_ );
+		lightShader_.SetMatSpecularIntensity(0.0f);
+		lightShader_.SetMatSpecularPower(0);
+
+		if (!mesh1_.loadMesh("../Content/phoenix_ugv.md2"))
+			return false;
+
+		if (!mesh2_.loadMesh("../Content/jeep.obj"))
+			return false;
+
+		if (!mesh3_.loadMesh("../Content/hheli.obj"))
+			return false;
+
+		return true;
     }
 
     void run(){
@@ -90,29 +97,35 @@ public:// == CallbackInterface ==
 	
 
     virtual void renderSceneCB() override{
+		scale_ += 0.01f;
+		pCamera_->onRender();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		pCamera_->onRender();
-
-		Pipeline p;
-		p.worldPos(-3.0f, 0.0f, 0.0f);
-		p.scale(2.0f, 2.0f, 2.0f);
-		p.rotate(-90.0f, 15.0f, 0.0f);
-		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.setPerspectiveProjection(persProjInfo_);
 		lightShader_.SetEyeWorldPos(pCamera_->getPos());
+		
+		Pipeline p;
+		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+		p.rotate(0.0f, scale_, 0.0f);
+		p.setPerspectiveProjection(persProjInfo_);
 
-		lightShader_.SetVP(p.getViewProjectionTransformation());
+		p.scale(0.1f, 0.1f, 0.1f);
+		p.worldPos(-6.0f, -2.0f, 10.0f);
+		lightShader_.SetWVP(p.getWVPTransformation());
 		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		lightShader_.SetTesselationLevel(tesselationLevel_);
-		mesh_.Render(nullptr);
+		mesh1_.render();
 
-		p.worldPos(3.0f, 0.0f, 0.0f);
-		p.rotate(-90.0f, -15.0f, 0.0f);
-		lightShader_.SetVP(p.getViewProjectionTransformation());
+		p.scale(0.01f, 0.01f, 0.01f);
+		p.worldPos(6.0f, -2.0f, 10.0f);
+		lightShader_.SetWVP(p.getWVPTransformation());
 		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		lightShader_.SetTesselationLevel(1.0f);
-		mesh_.Render( nullptr );
+		mesh2_.render();
+
+		p.scale(0.04f, 0.04f, 0.04f);
+		p.worldPos(0.0f, 6.0f, 10.0f);
+		lightShader_.SetWVP(p.getWVPTransformation());
+		lightShader_.SetWorldMatrix(p.getWorldTransformation());
+		mesh3_.render();
+
 		glutSwapBuffers();
     }
 
@@ -130,21 +143,7 @@ public:// == CallbackInterface ==
         case 'q':
             glutLeaveMainLoop();
             break;
-		case OGLDEV_KEY_PLUS:
-			tesselationLevel_ += 1.0f;
-			break;
-		case OGLDEV_KEY_MINUS:
-			if(tesselationLevel_ > 2.0f )
-				tesselationLevel_ -= 1.0f;
-			break;
-		case 'z':
-			isWireFrame_ = !isWireFrame_;
-
-			if (isWireFrame_)
-				glPolygonMode(GL_FRONT, GL_LINE);
-			else
-				glPolygonMode(GL_FRONT, GL_FILL);
-			break;
+		
         default:
 			pCamera_->onKeyboard(key);
             break;

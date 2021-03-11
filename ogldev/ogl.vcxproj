@@ -133,6 +133,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="CubeMapTexture.cpp" />
     <ClCompile Include="GLUTBackend.cpp" />
+    <ClCompile Include="import\BasicMesh.cpp" />
     <ClCompile Include="LightTechnique.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math_3d.cpp" />
@@ -182,6 +183,8 @@
     <ClInclude Include="Utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\basic_lighting_fs.glsl" />
+    <None Include="shaders\basic_lighting_vs.glsl" />
     <None Include="shaders\lighting_cs.glsl" />
     <None Include="shaders\lighting_es.glsl" />
     <None Include="shaders\lighting_fs.glsl" />

@@ -27,8 +27,11 @@
 
 #include "ogl_keys.hpp"
 
-#define WINDOW_WIDTH  1680
-#define WINDOW_HEIGHT 1050
+static const int WINDOW_WIDTH = 1680;
+static const int WINDOW_HEIGHT = 1050;
+static const int NUM_ROWS = 50;
+static const int NUM_COLS = 20;
+static const int NUM_INSTANCES = NUM_ROWS * NUM_COLS;
 
 static long long get_current_time_ms() {
 	return GetTickCount();
@@ -37,19 +40,18 @@ static long long get_current_time_ms() {
 // MESA_GLSL_VERSION_OVERRIDE=330 MESA_GL_VERSION_OVERRIDE=3.3 ./ogl
 
 class Main : public CallbackInterface {
-private:
 	LightingShader				lightShader_;
 	std::unique_ptr< Camera >	pCamera_;
 	float						scale_{ 0.0f };
 	DirectionalLight			directionalLight_;
-	BasicMesh					mesh1_;
-	BasicMesh					mesh2_;
-	BasicMesh					mesh3_;
+	BasicMesh					mesh_;
 	PersProjInfo				persProjInfo_;
+	Vector3f					positions_[NUM_INSTANCES];
+	float						velocity_[NUM_INSTANCES];
 public:
 	Main() {
 		directionalLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
-		directionalLight_.AmbientIntensity = 0.25f;
+		directionalLight_.AmbientIntensity = 0.55f;
 		directionalLight_.DiffuseIntensity = 0.9f;
 		directionalLight_.Direction = Vector3f(1.0f, 0.0f, 0.0f);
 
@@ -61,32 +63,31 @@ public:
 	}
 public: // == Main ==
     bool init(){
-		Vector3f pos(3.0f, 7.0f, -10.0f);
+		Vector3f pos(7.0f, 3.0f, 0.0f);
 		Vector3f target(0.0f, -0.2f, 1.0f);
 		Vector3f up(0.0f, 1.0f, 0.0f);
-
 		pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT, pos, target, up);
-		
+		lightShader_.setShaderPath("shaders/instance_light_vs.glsl", "shaders/instance_light_fs.glsl");
+
 		if (!lightShader_.init()) {
-			std::cerr << "Failed to load basic light shader\n";
+			std::cerr << "Failed to setup light shader\n";
 			return false;
 		}
 
 		lightShader_.enable();
 		lightShader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
-		lightShader_.SetDirectionalLight( directionalLight_ );
+		lightShader_.SetDirectionalLight(directionalLight_);
 		lightShader_.SetMatSpecularIntensity(0.0f);
-		lightShader_.SetMatSpecularPower(0);
+		lightShader_.SetMatSpecularPower(0.0f);
+		lightShader_.set4Colors(0, Vector4f(1.0f, 0.5f, 0.5f, 0.0f));
+		lightShader_.set4Colors(1, Vector4f(0.5f, 1.0f, 1.0f, 0.0f));
+		lightShader_.set4Colors(2, Vector4f(1.0f, 0.5f, 1.0f, 0.0f));
+		lightShader_.set4Colors(3, Vector4f(1.0f, 1.0f, 1.0f, 0.0f));
 
-		if (!mesh1_.loadMesh("../Content/phoenix_ugv.md2"))
+		if (!mesh_.loadMesh("../Content/spider.obj"))
 			return false;
 
-		if (!mesh2_.loadMesh("../Content/jeep.obj"))
-			return false;
-
-		if (!mesh3_.loadMesh("../Content/hheli.obj"))
-			return false;
-
+		claculatePositions();
 		return true;
     }
 
@@ -97,34 +98,30 @@ public:// == CallbackInterface ==
 	
 
     virtual void renderSceneCB() override{
-		scale_ += 0.01f;
+		scale_ += 0.005f;
 		pCamera_->onRender();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		lightShader_.enable();
 		lightShader_.SetEyeWorldPos(pCamera_->getPos());
-		
+
 		Pipeline p;
 		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.rotate(0.0f, scale_, 0.0f);
 		p.setPerspectiveProjection(persProjInfo_);
+		p.rotate(0.0f, 90.0f, 0.0f);
+		p.scale(0.005f, 0.005f, 0.005f);
 
-		p.scale(0.1f, 0.1f, 0.1f);
-		p.worldPos(-6.0f, -2.0f, 10.0f);
-		lightShader_.SetWVP(p.getWVPTransformation());
-		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		mesh1_.render();
+		Matrix4f wvpMatrices[NUM_INSTANCES];
+		Matrix4f worldMatrices[NUM_INSTANCES];
 
-		p.scale(0.01f, 0.01f, 0.01f);
-		p.worldPos(6.0f, -2.0f, 10.0f);
-		lightShader_.SetWVP(p.getWVPTransformation());
-		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		mesh2_.render();
+		for (size_t idx = 0; idx < NUM_INSTANCES; idx++) {
+			Vector3f pos(positions_[idx]);
+			pos.y += sin(scale_) * velocity_[idx];
+			p.worldPos(pos);
+			wvpMatrices[idx] = p.getWVPTransformation().transpose();
+			worldMatrices[idx] = p.getWorldTransformation().transpose();
+		}
 
-		p.scale(0.04f, 0.04f, 0.04f);
-		p.worldPos(0.0f, 6.0f, 10.0f);
-		lightShader_.SetWVP(p.getWVPTransformation());
-		lightShader_.SetWorldMatrix(p.getWorldTransformation());
-		mesh3_.render();
+		mesh_.render(NUM_INSTANCES, wvpMatrices, worldMatrices);
 
 		glutSwapBuffers();
     }
@@ -155,7 +152,21 @@ public:// == CallbackInterface ==
     }
 
 	virtual void mouseCallback(int /*btn*/, int /*state*/, int /*x*/, int /*y*/) override {}
+private:
+	void claculatePositions() {
+		for (int i = 0; i < NUM_ROWS; i++) {
+			for (int j = 0; j < NUM_COLS; j++) {
+				int idx = i * NUM_COLS + j;
+				positions_[idx].x = float(j);
+				positions_[idx].y = rand_float() * 5.0f;
+				positions_[idx].z = float(i);
+				velocity_[idx] = rand_float();
 
+				if (i & 1)
+					velocity_[idx] *= -1.0f;
+			}
+		}
+	}
 };
 
 int main( int argc, char** argv ){
@@ -164,6 +175,7 @@ int main( int argc, char** argv ){
     if( !GLUTBackendCreateWindow( WINDOW_WIDTH, WINDOW_HEIGHT, 32, false, "nice app" ) )
         return -1;
 
+	srand(time(nullptr));
     Main app;
 
     if( !app.init() )

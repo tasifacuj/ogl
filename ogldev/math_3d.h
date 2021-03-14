@@ -173,6 +173,19 @@ public:
     void InitTranslationTransform(float x, float y, float z);
     void InitCameraTransform(const Vector3f& Target, const Vector3f& Up);
     void InitPersProjTransform(float FOV, float Width, float Height, float zNear, float zFar);
+
+	Matrix4f transpose() const
+	{
+		Matrix4f n;
+
+		for (unsigned int i = 0; i < 4; i++) {
+			for (unsigned int j = 0; j < 4; j++) {
+				n.m[i][j] = m[j][i];
+			}
+		}
+
+		return n;
+	}
 };
 
 
@@ -200,6 +213,26 @@ struct PersProjInfo
     float zNear;
     float zFar;
 };
+
+struct Vector4f {
+	float x{ 0.0f };
+	float y{ 0.0f };
+	float z{ 0.0f };
+	float w{ 0.0f };
+
+	Vector4f( float xx, float yy, float zz, float ww )
+		: x( xx )
+		, y( yy )
+		, z( zz )
+		, w( ww )
+	{}
+
+	Vector3f to3f()const {
+		return Vector3f(x, y, z);
+	}
+};
+
+float rand_float();
 
 #endif	/* MATH_3D_H */
 

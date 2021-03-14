@@ -161,6 +161,7 @@
     <ClInclude Include="CubeMapTexture.hpp" />
     <ClInclude Include="EngineCommon.hpp" />
     <ClInclude Include="GlutBackEnd.hpp" />
+    <ClInclude Include="import\BasicMesh.hpp" />
     <ClInclude Include="interface\RenderCallbackInterface.hpp" />
     <ClInclude Include="LightTechnique.hpp" />
     <ClInclude Include="math_3d.h" />
@@ -185,6 +186,8 @@
   <ItemGroup>
     <None Include="shaders\basic_lighting_fs.glsl" />
     <None Include="shaders\basic_lighting_vs.glsl" />
+    <None Include="shaders\instance_light_fs.glsl" />
+    <None Include="shaders\instance_light_vs.glsl" />
     <None Include="shaders\lighting_cs.glsl" />
     <None Include="shaders\lighting_es.glsl" />
     <None Include="shaders\lighting_fs.glsl" />

@@ -170,6 +170,9 @@
     <ClInclude Include="ogl_keys.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="import\BasicMesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\lighting_vs.glsl" />
@@ -178,5 +181,7 @@
     <None Include="shaders\lighting_fs.glsl" />
     <None Include="shaders\basic_lighting_vs.glsl" />
     <None Include="shaders\basic_lighting_fs.glsl" />
+    <None Include="shaders\instance_light_vs.glsl" />
+    <None Include="shaders\instance_light_fs.glsl" />
   </ItemGroup>
 </Project>

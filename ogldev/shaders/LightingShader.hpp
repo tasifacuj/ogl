@@ -66,7 +66,7 @@ public:
 	static const unsigned int MAX_POINT_LIGHTS = 2;
 	static const unsigned int MAX_SPOT_LIGHTS = 2;
 
-	LightingShader() = default;
+	LightingShader();
 
 	virtual bool init() override;
 
@@ -81,6 +81,8 @@ public:
 	void SetMatSpecularIntensity(float Intensity);
 	void SetMatSpecularPower(float Power);
 
+	void setShaderPath(std::string const& vsPath, std::string const& fsPath);
+	void set4Colors(size_t idx, Vector4f const& v);
 private:
 	GLuint m_WVPLocation;
 	GLuint m_WorldMatrixLocation;
@@ -124,6 +126,11 @@ private:
 			GLuint Exp;
 		} Atten;
 	} m_spotLightsLocation[MAX_SPOT_LIGHTS];
+
+	std::string vs_;
+	std::string fs_;
+
+	GLuint	colorLocation_[4];
 };
 
 

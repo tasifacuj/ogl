@@ -21,6 +21,7 @@ public: // == CTORs --
 public: // == BasicMesh ==
 	bool loadMesh(std::string const& filename);
 	void render();
+	void render(unsigned nInstances, Matrix4f const* wvpMats, Matrix4f const* worldMats);
 private:
 	bool initFromScene(aiScene const* pScene, std::string const& filename);
 	
@@ -34,12 +35,15 @@ private:
 	bool initMaterials(aiScene const* pScene, std::string const& filename);
 	void clear();
 private:
-#define INVALID_MATERIAL 0xFFFFFFFF
+	#define INVALID_MATERIAL 0xFFFFFFFF
 
-#define INDEX_BUFFER 0    
-#define POS_VB       1
-#define NORMAL_VB    2
-#define TEXCOORD_VB  3  
+	static constexpr int INDEX_BUFFER	= 0;
+	static constexpr int POS_VB			= 1;
+	static constexpr int NORMAL_VB		= 2;
+	static constexpr int TEXCOORD_VB	= 3;
+	static constexpr int WVP_MAT_VB		= 4;
+	static constexpr int WORLD_MAT_VB	= 5;
+
 	struct BasicMeshEntry {
 		BasicMeshEntry()
 		{
@@ -57,8 +61,8 @@ private:
 
 	using TexturePtr = std::shared_ptr< Texture >;
 
-	GLuint	vao_;
-	GLuint	buffers_[4];
+	GLuint							vao_;
+	GLuint							buffers_[6];
 
 	std::vector< BasicMeshEntry >	entries_;
 	std::vector< TexturePtr >		textures_;

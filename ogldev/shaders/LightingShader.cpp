@@ -1,17 +1,32 @@
 #include "LightingShader.hpp"
 #include "../Utils.hpp"
 
+#include <iostream>
+#include <cassert>
+
+LightingShader::LightingShader() {
+	/*vs_ = "shaders/basic_lighting_vs.glsl";
+	fs_ = "shaders/basic_lighting_fs.glsl";*/
+}
+
+void LightingShader::setShaderPath(std::string const& vsPath, std::string const& fsPath) {
+	vs_ = vsPath;
+	fs_ = fsPath;
+}
+
 bool LightingShader::init()
 {
 	if (!Technique::init()) {
 		return false;
 	}
 
-	if (!loadShader(GL_VERTEX_SHADER, "shaders/basic_lighting_vs.glsl")) {
+	if (!loadShader(GL_VERTEX_SHADER, vs_)) {
+		std::cerr << "Failed to load " << vs_ << std::endl;
 		return false;
 	}
 
-	if (!loadShader(GL_FRAGMENT_SHADER, "shaders/basic_lighting_fs.glsl")) {
+	if (!loadShader(GL_FRAGMENT_SHADER, fs_)) {
+		std::cerr << "Failed to load " << fs_ << std::endl;
 		return false;
 	}
 
@@ -22,7 +37,6 @@ bool LightingShader::init()
 	m_WVPLocation = getUniformLocation("gWVP");
 	m_WorldMatrixLocation = getUniformLocation("gWorld");
 	m_colorTextureLocation = getUniformLocation("gColorMap");
-	//m_displacementMapLocation = getUniformLocation("gDisplacementMap");
 	m_eyeWorldPosLocation = getUniformLocation("gEyeWorldPos");
 	m_dirLightLocation.Color = getUniformLocation("gDirectionalLight.Base.Color");
 	m_dirLightLocation.AmbientIntensity = getUniformLocation("gDirectionalLight.Base.AmbientIntensity");
@@ -34,10 +48,9 @@ bool LightingShader::init()
 	m_numSpotLightsLocation = getUniformLocation("gNumSpotLights");
 
 	if (m_dirLightLocation.AmbientIntensity == INVALID_UNIFORM_LOCATION ||
-		m_WVPLocation == INVALID_UNIFORM_LOCATION ||
-		m_WorldMatrixLocation == INVALID_UNIFORM_LOCATION ||
+		/*m_WVPLocation == INVALID_UNIFORM_LOCATION ||
+		m_WorldMatrixLocation == INVALID_UNIFORM_LOCATION ||*/
 		m_colorTextureLocation == INVALID_UNIFORM_LOCATION ||
-		//m_displacementMapLocation == INVALID_UNIFORM_LOCATION ||
 		m_eyeWorldPosLocation == INVALID_UNIFORM_LOCATION ||
 		m_dirLightLocation.Color == INVALID_UNIFORM_LOCATION ||
 		m_dirLightLocation.DiffuseIntensity == INVALID_UNIFORM_LOCATION ||
@@ -128,18 +141,29 @@ bool LightingShader::init()
 		}
 	}
 
+	for (size_t idx = 0; idx < ARRAY_SIZE_IN_ELEMENTS(colorLocation_); idx++) {
+		char name[32] = { '\0' };
+		snprintf(name, sizeof(name), "gColor[%d]", idx);
+		colorLocation_[idx] = getUniformLocation(name);
+
+		if (INVALID_UNIFORM_LOCATION == colorLocation_[idx])
+			return false;
+	}
+
 	return true;
 }
 
 
 void LightingShader::SetWVP(const Matrix4f& WVP)
 {
+	assert(0);
 	glUniformMatrix4fv(m_WVPLocation, 1, GL_TRUE, (const GLfloat*)WVP.m);
 }
 
 
 void LightingShader::SetWorldMatrix(const Matrix4f& WorldInverse)
 {
+	assert(0);
 	glUniformMatrix4fv(m_WorldMatrixLocation, 1, GL_TRUE, (const GLfloat*)WorldInverse.m);
 }
 
@@ -215,4 +239,6 @@ void LightingShader::SetSpotLights(unsigned int NumLights, const SpotLight* pLig
 	}
 }
 
-
+void LightingShader::set4Colors(size_t idx, Vector4f const& color) {
+	glUniform4f(colorLocation_[idx], color.x, color.y, color.z, color.w);
+}

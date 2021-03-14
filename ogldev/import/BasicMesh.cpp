@@ -6,9 +6,11 @@
 #include <iostream>
 #include <cassert>
 
-#define POSITION_LOCATION 0
-#define TEX_COORD_LOCATION 1
-#define NORMAL_LOCATION 2
+static const int POSITION_LOCATION	= 0;
+static const int TEX_COORD_LOCATION	= 1;
+static const int NORMAL_LOCATION	= 2;
+static const int WVP_LOCATION		= 3;
+static const int WORLD_LOCATION		= 7;
 
 BasicMesh::BasicMesh()
 	: vao_(0) {
@@ -86,24 +88,41 @@ bool BasicMesh::initFromScene(aiScene const* pScene, std::string const& filename
 
 	if (!initMaterials(pScene, filename))
 		return false;
-
+// positions
 	glBindBuffer(GL_ARRAY_BUFFER, buffers_[POS_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(positions[0]) * positions.size(), &positions[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(POSITION_LOCATION);
 	glVertexAttribPointer(POSITION_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+// textures
 	glBindBuffer(GL_ARRAY_BUFFER, buffers_[TEXCOORD_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords[0]) * texCoords.size(), &texCoords[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(TEX_COORD_LOCATION);
 	glVertexAttribPointer(TEX_COORD_LOCATION, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
+// normals
 	glBindBuffer(GL_ARRAY_BUFFER, buffers_[NORMAL_VB]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0]) * normals.size(), &normals[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray(NORMAL_LOCATION);
 	glVertexAttribPointer(NORMAL_LOCATION, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+// indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers_[INDEX_BUFFER]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0]) * indices.size(), &indices[0], GL_STATIC_DRAW);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, buffers_[WVP_MAT_VB]);
+
+	for (unsigned int i = 0; i < 4; i++) {
+		glEnableVertexAttribArray(WVP_LOCATION + i);
+		glVertexAttribPointer(WVP_LOCATION + i, 4, GL_FLOAT, GL_FALSE, sizeof(Matrix4f), (const GLvoid*)(sizeof(GLfloat) * i * 4));
+		glVertexAttribDivisor(WVP_LOCATION + i, 1);
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, buffers_[WORLD_MAT_VB]);
+
+	for (unsigned int i = 0; i < 4; i++) {
+		glEnableVertexAttribArray(WORLD_LOCATION + i);
+		glVertexAttribPointer(WORLD_LOCATION + i, 4, GL_FLOAT, GL_FALSE, sizeof(Matrix4f), (const GLvoid*)(sizeof(GLfloat) * i * 4));
+		glVertexAttribDivisor(WORLD_LOCATION + i, 1);
+	}
+
 
 	return GLCheckError();
 }
@@ -204,5 +223,35 @@ void BasicMesh::render() {
 		);
 	}
 
+	glBindVertexArray(0);
+}
+
+void BasicMesh::render(unsigned NumInstances, Matrix4f const* wvpMats, Matrix4f const* worldMats) {
+	glBindBuffer(GL_ARRAY_BUFFER, buffers_[WVP_MAT_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Matrix4f) * NumInstances, wvpMats, GL_DYNAMIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, buffers_[WORLD_MAT_VB]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(Matrix4f) * NumInstances, worldMats, GL_DYNAMIC_DRAW);
+
+	glBindVertexArray(vao_);
+
+	for (unsigned int i = 0; i < entries_.size(); i++) {
+		const unsigned int MaterialIndex = entries_[i].MaterialIndex;
+
+		assert(MaterialIndex < textures_.size());
+
+		if (textures_[MaterialIndex]) {
+			textures_[MaterialIndex]->bind(GL_TEXTURE0);
+		}
+
+		glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+			entries_[i].NumIndices,
+			GL_UNSIGNED_INT,
+			(void*)(sizeof(unsigned int) * entries_[i].BaseIndex),
+			NumInstances,
+			entries_[i].BaseVertex);
+	}
+
+	// Make sure the VAO is not changed from the outside    
 	glBindVertexArray(0);
 }

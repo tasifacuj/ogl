@@ -178,3 +178,8 @@ Quaternion operator*(const Quaternion& q, const Vector3f& v)
 
     return ret;
 }
+
+float rand_float() {
+	float m = RAND_MAX;
+	return (float(rand()) / m);
+}

@@ -46,11 +46,32 @@ class Main : public CallbackInterface {
 	GBuffer						gBuffer_;
 public:
 	Main() {
-		
+        persProjInfo_.FOV = 60.0f;
+        persProjInfo_.Width = WINDOW_WIDTH;
+        persProjInfo_.Height = WINDOW_HEIGHT;
+        persProjInfo_.zNear = 1.0f;
+        persProjInfo_.zFar = 100.0f;
 	}
 public: // == Main ==
     bool init(){
-		
+        if (!gBuffer_.init(WINDOW_WIDTH, WINDOW_HEIGHT))
+            return false;
+
+        pCamera_ = std::make_unique< Camera >(WINDOW_WIDTH, WINDOW_HEIGHT);
+
+        if (!dsGeometryPassShader_.init()) {
+            std::cerr << "Failed to setup DSGeometryPassShader\n";
+            return false;
+        }
+
+        dsGeometryPassShader_.enable();
+        dsGeometryPassShader_.setColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+
+        if (!mesh_.loadMesh("../Content/phoenix_ugv.md2"))
+            return false;
+
+
+        return true;
     }
 
     void run(){
@@ -60,8 +81,10 @@ public:// == CallbackInterface ==
 	
 
     virtual void renderSceneCB() override{
-		
-
+        scale_ += 0.05f;
+        pCamera_->onRender();
+        geometryPass();
+        lightPass();
 		glutSwapBuffers();
     }
 
@@ -92,7 +115,41 @@ public:// == CallbackInterface ==
 
 	virtual void mouseCallback(int /*btn*/, int /*state*/, int /*x*/, int /*y*/) override {}
 private:
-	
+    void geometryPass() {
+        dsGeometryPassShader_.enable();
+        gBuffer_.bindForWriting();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        Pipeline p;
+        p.scale(0.1f, 0.1f, 0.1f);
+        p.rotate(0.0f, scale_, 0.0f);
+        p.worldPos(-0.8f, -1.0f, 12.0f);
+        p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+        p.setPerspectiveProjection(persProjInfo_);
+        dsGeometryPassShader_.setWVP(p.getWVPTransformation());
+        dsGeometryPassShader_.setWorldMatrix(p.getWorldTransformation());
+        mesh_.render();
+    }
+    
+    void lightPass() {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        gBuffer_.bindForReading();
+        GLint halfWidth = (GLint)(WINDOW_WIDTH / 2.0f);
+        GLint halfHeight = (GLint)(WINDOW_HEIGHT / 2.0f);
+        
+        gBuffer_.setReadBuffer(GBuffer::GBUFFER_TEXTURE_TYPE_POSITION);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, 0, halfWidth, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+        gBuffer_.setReadBuffer(GBuffer::GBUFFER_TEXTURE_TYPE_DIFFUSE);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, 0, halfHeight, halfWidth, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+        gBuffer_.setReadBuffer(GBuffer::GBUFFER_TEXTURE_TYPE_NORMAL);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, halfWidth, halfHeight, WINDOW_WIDTH, WINDOW_HEIGHT, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+
+        gBuffer_.setReadBuffer(GBuffer::GBUFFER_TEXTURE_TYPE_TEXCOORD);
+        glBlitFramebuffer(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, halfWidth, 0, WINDOW_WIDTH, halfHeight, GL_COLOR_BUFFER_BIT, GL_LINEAR);
+    }
 };
 
 int main( int argc, char** argv ){

@@ -163,7 +163,8 @@ private:
 	void dirLightPass() {
 		dsDirLightPassShader_.enable();
 		dsDirLightPassShader_.SetEyeWorldPos(pCamera_->getPos());
-		Matrix4f wvp = Matrix4f::identity();
+		Matrix4f wvp;
+		wvp.InitIdentity();
 		dsDirLightPassShader_.SetWVP(wvp);
 		quad_.render();
 	}
@@ -212,8 +213,8 @@ public: // == Main ==
 
 		dsDirLightPassShader_.enable();
 		dsDirLightPassShader_.SetPositionTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_POSITION);
-		dsDirLightPassShader_.SetPositionTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_DIFFUSE);
-		dsDirLightPassShader_.SetPositionTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_NORMAL);
+		dsDirLightPassShader_.SetColorTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_DIFFUSE);
+		dsDirLightPassShader_.SetNormalTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_NORMAL);
 		dsDirLightPassShader_.SetDirectionalLight( dirLight_ );
 		dsDirLightPassShader_.SetScreenSize(WindowWidth, WindowHeight);
 

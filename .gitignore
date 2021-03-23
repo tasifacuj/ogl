@@ -33,3 +33,4 @@
 build*
 
 ogldev/Debug*
+ogldev/x64/Debug/*

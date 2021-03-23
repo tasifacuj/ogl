@@ -1,0 +1,62 @@
+﻿  BillboardList.cpp
+d:\projects\dev\opengl\ogl\ogldev\texture.hpp(5): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  BillboardShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  GBuffer.cpp
+d:\projects\dev\opengl\ogl\ogldev\buffers\gbuffer.hpp(3): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Camera.cpp
+d:\projects\dev\opengl\ogl\ogldev\camera.cpp(4): fatal error C1083: Cannot open include file: 'GL/freeglut.h': No such file or directory
+  CubeMapTexture.cpp
+d:\projects\dev\opengl\ogl\ogldev\cubemaptexture.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  GLUTBackend.cpp
+d:\projects\dev\opengl\ogl\ogldev\glutbackend.cpp(5): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  BasicMesh.cpp
+d:\projects\dev\opengl\ogl\ogldev\import\basicmesh.hpp(9): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  LightTechnique.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  main.cpp
+d:\projects\dev\opengl\ogl\ogldev\main.cpp(2): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  math_3d.cpp
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(43): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(44): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(74): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(74): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(75): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(75): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(76): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(76): warning C4244: 'initializing': conversion from 'double' to 'const float', possible loss of data
+d:\projects\dev\opengl\ogl\ogldev\math_3d.cpp(124): warning C4244: 'argument': conversion from 'double' to 'float', possible loss of data
+  Mesh.cpp
+d:\projects\dev\opengl\ogl\ogldev\mesh.hpp(4): fatal error C1083: Cannot open include file: 'assimp/Importer.hpp': No such file or directory
+  ParticleSystem.cpp
+d:\projects\dev\opengl\ogl\ogldev\particlesystem.hpp(3): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  DSGeometryPassShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  LightingShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  PickingShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  SimpleColorShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  PickingTexture.cpp
+d:\projects\dev\opengl\ogl\ogldev\textures\pickingtexture.hpp(2): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Pipeline.cpp
+  PSUpdateShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  RandomTexture.cpp
+d:\projects\dev\opengl\ogl\ogldev\randomtexture.hpp(2): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Generating Code...
+  Compiling...
+  ShadowMapFBO.cpp
+d:\projects\dev\opengl\ogl\ogldev\shadowmapfbo.hpp(3): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  ShadowMapTechnique.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  SkyBox.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  SkyboxShader.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Technique.cpp
+d:\projects\dev\opengl\ogl\ogldev\technique.hpp(4): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Texture.cpp
+d:\projects\dev\opengl\ogl\ogldev\texture.hpp(5): fatal error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  Generating Code...

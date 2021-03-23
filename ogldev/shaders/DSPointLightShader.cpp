@@ -34,12 +34,12 @@ bool DSPointLightShader::init() {
 	return DSLightPassShader::init();
 }
 
-void DSPointLightShader::setPointLight(PointLight const& light) {
-	glUniform3f(pointLightLocation_.Color, light.Color.x, light.Color.y, light.Color.z);
-	glUniform1f(pointLightLocation_.AmbientIntensity, light.AmbientIntensity);
-	glUniform1f(pointLightLocation_.DiffuseIntensity, light.DiffuseIntensity);
-	glUniform3f(pointLightLocation_.Position, light.Position.x, light.Position.y, light.Position.z);
-	glUniform1f(pointLightLocation_.Atten.Constant, light.Attenuation.Constant);
-	glUniform1f(pointLightLocation_.Atten.Linear, light.Attenuation.Linear);
-	glUniform1f(pointLightLocation_.Atten.Exp, light.Attenuation.Exp);
+void DSPointLightShader::setPointLight(PointLight const& Light) {
+	glUniform3f(pointLightLocation_.Color, Light.Color.x, Light.Color.y, Light.Color.z);
+	glUniform1f(pointLightLocation_.AmbientIntensity, Light.AmbientIntensity);
+	glUniform1f(pointLightLocation_.DiffuseIntensity, Light.DiffuseIntensity);
+	glUniform3f(pointLightLocation_.Position, Light.Position.x, Light.Position.y, Light.Position.z);
+	glUniform1f(pointLightLocation_.Atten.Constant, Light.Attenuation.Constant);
+	glUniform1f(pointLightLocation_.Atten.Linear, Light.Attenuation.Linear);
+	glUniform1f(pointLightLocation_.Atten.Exp, Light.Attenuation.Exp);
 }

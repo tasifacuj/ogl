@@ -23,31 +23,35 @@ bool DSLightPassShader::init() {
 
 	return true;
 }
-
 void DSLightPassShader::SetWVP(const Matrix4f& WVP)
 {
 	glUniformMatrix4fv(wvpLocation_, 1, GL_TRUE, (const GLfloat*)WVP.m);
 }
+
 
 void DSLightPassShader::SetPositionTextureUnit(unsigned int TextureUnit)
 {
 	glUniform1i(posTextureUnitLocation_, TextureUnit);
 }
 
+
 void DSLightPassShader::SetColorTextureUnit(unsigned int TextureUnit)
 {
 	glUniform1i(colorTextureUnitLocation_, TextureUnit);
 }
+
 
 void DSLightPassShader::SetNormalTextureUnit(unsigned int TextureUnit)
 {
 	glUniform1i(normalTextureUnitLocation_, TextureUnit);
 }
 
+
 void DSLightPassShader::SetEyeWorldPos(const Vector3f& EyePos)
 {
 	glUniform3f(eyeWorldPosLocation_, EyePos.x, EyePos.y, EyePos.z);
 }
+
 
 void DSLightPassShader::SetScreenSize(unsigned int Width, unsigned int Height)
 {

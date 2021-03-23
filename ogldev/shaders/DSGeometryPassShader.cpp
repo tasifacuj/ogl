@@ -5,10 +5,10 @@ bool DSGeometryPassShader::init() {
 	if (!Technique::init())
 		return false;
 
-	if (!loadShader(GL_VERTEX_SHADER, "shaders/geometry_pass_vs.glsl"))
+	if (!loadShader(GL_VERTEX_SHADER, "shaders/t36_geometry_pass_vs.glsl"))
 		return false;
 
-	if (!loadShader(GL_FRAGMENT_SHADER, "shaders/geometry_pass_fs.glsl"))
+	if (!loadShader(GL_FRAGMENT_SHADER, "shaders/t36_geometry_pass_fs.glsl"))
 		return false;
 
 	if (!finalize())

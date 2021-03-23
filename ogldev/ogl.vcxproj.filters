@@ -93,6 +93,15 @@
     <ClCompile Include="shaders\DSGeometryPassShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="shaders\DSLightPassShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\DSDirLightPassShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\DSPointLightShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BillboardList.hpp">
@@ -185,6 +194,18 @@
     <ClInclude Include="shaders\DSGeometryPassShader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="shaders\DSDirLightPassShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\DSLightPassShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="common\LightsCommon.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\DSPointLightShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\lighting_vs.glsl" />
@@ -195,9 +216,12 @@
     <None Include="shaders\basic_lighting_fs.glsl" />
     <None Include="shaders\instance_light_vs.glsl" />
     <None Include="shaders\instance_light_fs.glsl" />
-    <None Include="shaders\geometry_pass_fs.glsl" />
+    <None Include="shaders\t36_geometry_pass_fs.glsl" />
+    <None Include="shaders\t36_dir_light_pas_fs.glsl" />
+    <None Include="shaders\t36_light_pass_vs.glsl" />
+    <None Include="shaders\t36_point_light_pass_fs.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\geometry_pass_vs.glsl" />
+    <Text Include="shaders\t36_geometry_pass_vs.glsl" />
   </ItemGroup>
 </Project>

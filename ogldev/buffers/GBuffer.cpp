@@ -31,6 +31,8 @@ bool GBuffer::init(unsigned width, unsigned height) {
 	for (size_t idx = 0; idx < ARRAY_SIZE_IN_ELEMENTS(textures_); idx++) {
 		glBindTexture(GL_TEXTURE_2D, textures_[idx]);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + idx, GL_TEXTURE_2D, textures_[idx], 0);
 	}
 
@@ -42,7 +44,7 @@ bool GBuffer::init(unsigned width, unsigned height) {
 		GL_COLOR_ATTACHMENT0,
 		GL_COLOR_ATTACHMENT1,
 		GL_COLOR_ATTACHMENT2,
-		GL_COLOR_ATTACHMENT3,
+		GL_COLOR_ATTACHMENT3
 	};
 
 	glDrawBuffers(ARRAY_SIZE_IN_ELEMENTS(drawBuffers), drawBuffers);
@@ -62,6 +64,13 @@ void GBuffer::bindForWriting() {
 }
 
 void GBuffer::bindForReading() {
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	
+
+	for (size_t idx = 0; idx < ARRAY_SIZE_IN_ELEMENTS( textures_ ); idx++) {
+		glActiveTexture(GL_TEXTURE0 + idx);
+		glBindTexture(GL_TEXTURE_2D, textures_[GBUFFER_TEXTURE_TYPE_POSITION + idx]);
+	}
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, fbo_);
 }
 

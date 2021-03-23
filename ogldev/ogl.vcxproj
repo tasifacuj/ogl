@@ -140,7 +140,10 @@
     <ClCompile Include="math_3d.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="ParticleSystem.cpp" />
+    <ClCompile Include="shaders\DSDirLightPassShader.cpp" />
     <ClCompile Include="shaders\DSGeometryPassShader.cpp" />
+    <ClCompile Include="shaders\DSLightPassShader.cpp" />
+    <ClCompile Include="shaders\DSPointLightShader.cpp" />
     <ClCompile Include="shaders\LightingShader.cpp" />
     <ClCompile Include="shaders\PickingShader.cpp" />
     <ClCompile Include="shaders\SimpleColorShader.cpp" />
@@ -161,6 +164,7 @@
     <ClInclude Include="buffers\GBuffer.hpp" />
     <ClInclude Include="CallbackInterface.hpp" />
     <ClInclude Include="Camera.hpp" />
+    <ClInclude Include="common\LightsCommon.hpp" />
     <ClInclude Include="CubeMapTexture.hpp" />
     <ClInclude Include="EngineCommon.hpp" />
     <ClInclude Include="GlutBackEnd.hpp" />
@@ -171,7 +175,10 @@
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="ogl_keys.hpp" />
     <ClInclude Include="ParticleSystem.hpp" />
+    <ClInclude Include="shaders\DSDirLightPassShader.hpp" />
     <ClInclude Include="shaders\DSGeometryPassShader.hpp" />
+    <ClInclude Include="shaders\DSLightPassShader.hpp" />
+    <ClInclude Include="shaders\DSPointLightShader.hpp" />
     <ClInclude Include="shaders\LightingShader.hpp" />
     <ClInclude Include="shaders\PickingShader.hpp" />
     <ClInclude Include="shaders\SimpleColorShader.hpp" />
@@ -190,16 +197,19 @@
   <ItemGroup>
     <None Include="shaders\basic_lighting_fs.glsl" />
     <None Include="shaders\basic_lighting_vs.glsl" />
-    <None Include="shaders\geometry_pass_fs.glsl" />
+    <None Include="shaders\t36_geometry_pass_fs.glsl" />
     <None Include="shaders\instance_light_fs.glsl" />
     <None Include="shaders\instance_light_vs.glsl" />
     <None Include="shaders\lighting_cs.glsl" />
     <None Include="shaders\lighting_es.glsl" />
     <None Include="shaders\lighting_fs.glsl" />
     <None Include="shaders\lighting_vs.glsl" />
+    <None Include="shaders\t36_dir_light_pas_fs.glsl" />
+    <None Include="shaders\t36_light_pass_vs.glsl" />
+    <None Include="shaders\t36_point_light_pass_fs.glsl" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="shaders\geometry_pass_vs.glsl" />
+    <Text Include="shaders\t36_geometry_pass_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

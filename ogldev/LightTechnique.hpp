@@ -3,56 +3,7 @@
 
 #include "math_3d.h"
 #include "Technique.hpp"
-
-struct BaseLight{
-    Vector3f    Color;
-    float       AmbientIntensity;
-    float       DiffuseIntensity;
-
-    BaseLight()
-    : Color( 0.0f, 0.0f, 0.0f )
-    , AmbientIntensity( 0.0f )
-    , DiffuseIntensity( 0.0f )
-    {}
-};
-
-
-
-struct DirectionLight : BaseLight{
-    Vector3f    Direction;
-
-    DirectionLight()
-    : Direction( 0.0f, 0.0f, 0.0f )
-    {}
-};
-
-struct PointLight : BaseLight{
-    Vector3f    Position;
-
-    struct{
-        float Constatnt;
-        float Linear;
-        float Exp;
-    }Attenuation;
-
-    PointLight()
-    : Position( 0.0f, 0.0f, 0.0f ){
-        Attenuation.Constatnt = 1.0f;
-        Attenuation.Linear = 0.0f;
-        Attenuation.Exp = 0.0f;
-    }
-};
-
-
-struct SpotLight : PointLight{
-    Vector3f    Direction;
-    float       CutOff;//angle
-
-    SpotLight()
-    : Direction( 0.0f, 0.0f, 0.0f )
-    , CutOff( 0.0f )
-    {}
-};
+#include "common/LightsCommon.hpp"
 
 class LightTechnique : public Technique{
 public: // == CONSTANTS ==
@@ -65,7 +16,7 @@ public: // == Technique ==
 public: //== LightTechnique ==
     void setWVP( const Matrix4f& wvp );
     void setWorldMatrix( const Matrix4f& wm );
-    void setDirectionLight( DirectionLight const& dl );
+    void setDirectionLight( DirectionalLight const& dl );
 
     void setEyeWorldPosition( Vector3f const& eyeWorldPos );
     void setMatSpecularIntensity( float intensity );

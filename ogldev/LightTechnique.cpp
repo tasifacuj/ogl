@@ -360,7 +360,7 @@ void LightTechnique::setNormalMapTextureUnit(unsigned textureUnit){
     glUniform1i( normalMapLocation_, textureUnit );
 }
 
-void LightTechnique::setDirectionLight(const DirectionLight &dl){
+void LightTechnique::setDirectionLight(const DirectionalLight &dl){
     glUniform3f( dirLightLocation_.Color, dl.Color.x, dl.Color.y, dl.Color.z );
     glUniform1f( dirLightLocation_.AmbientIntensity, dl.AmbientIntensity );
     Vector3f dir = dl.Direction;
@@ -389,7 +389,7 @@ void LightTechnique::setPointLights(unsigned numLights, const PointLight *pLight
         glUniform1f( pointLightsLocation_[ idx ].AmbientIntensity,  pLights[ idx ].AmbientIntensity );
         glUniform1f( pointLightsLocation_[ idx ].DiffuseIntensity,  pLights[ idx ].DiffuseIntensity );
         glUniform3f( pointLightsLocation_[ idx ].Position,          pLights[ idx ].Position.x, pLights[ idx ].Position.y, pLights[ idx ].Position.z );
-        glUniform1f( pointLightsLocation_[ idx ].Atten.Constant,    pLights[ idx ].Attenuation.Constatnt );
+        glUniform1f( pointLightsLocation_[ idx ].Atten.Constant,    pLights[ idx ].Attenuation.Constant );
         glUniform1f( pointLightsLocation_[ idx ].Atten.Linear,      pLights[ idx ].Attenuation.Linear );
         glUniform1f( pointLightsLocation_[ idx ].Atten.Exp,         pLights[ idx ].Attenuation.Exp );
     }
@@ -408,7 +408,7 @@ void LightTechnique::setSpotLigts(unsigned nLights, const SpotLight *pLights){
         glUniform3f( spotLightsLocation_[ idx ].Direction, dir.x, dir.y, dir.z );
         glUniform1f( spotLightsLocation_[ idx ].CutOff, cosf( ToRadian( pLights[ idx ].CutOff ) ) );
 
-        glUniform1f( spotLightsLocation_[ idx ].Atten.Constant,    pLights[ idx ].Attenuation.Constatnt );
+        glUniform1f( spotLightsLocation_[ idx ].Atten.Constant,    pLights[ idx ].Attenuation.Constant );
         glUniform1f( spotLightsLocation_[ idx ].Atten.Linear,      pLights[ idx ].Attenuation.Linear );
         glUniform1f( spotLightsLocation_[ idx ].Atten.Exp,         pLights[ idx ].Attenuation.Exp );
     }

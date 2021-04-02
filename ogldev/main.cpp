@@ -12,17 +12,15 @@
 #include "Pipeline.hpp"
 #include "Camera.hpp"
 #include "Texture.hpp"
-
-
-#include "shaders/DSGeometryPassShader.hpp"
-#include "shaders/DSDirLightPassShader.hpp"
-#include "shaders/DSPointLightShader.hpp"
-#include "buffers/GBuffer.hpp"
-
+#include "CallbackInterface.hpp"
 #include "GlutBackEnd.hpp"
+
+#include "shaders/T38SkinnedShader.hpp"
+#include "import/SkinnedMesh.hpp"
+
 #include "Utils.hpp"
 #include "EngineCommon.hpp"
-#include "import/BasicMesh.hpp"
+
 #include "ogl_keys.hpp"
 
 
@@ -40,192 +38,57 @@ static long long get_current_time_ms() {
 // MESA_GLSL_VERSION_OVERRIDE=330 MESA_GL_VERSION_OVERRIDE=3.3 ./ogl
 
 class Main : public CallbackInterface {
-	DSGeometryPassShader		dsGeometryPassShader_;
-	DSPointLightShader			dsPointLightShader_;
-	DSDirLightPassShader		dsDirLightPassShader_;
+	T38SkinnedShader			shader_;
 	std::unique_ptr< Camera >	pCamera_;
-	float						scale_{ 0.0f };
-	SpotLight					spotLight_;
-	DirectionalLight			dirLight_;
-	PointLight					pointLights_[ 3 ];
-	BasicMesh					box_;
-	BasicMesh					sphere_;
-	BasicMesh					quad_;
+	DirectionalLight			directionalLight_;
+	SkinnedMesh					mesh_;
+	Vector3f					position_;
 	PersProjInfo				persProjInfo_;
-	GBuffer						gBuffer_;
-	Vector3f					boxPositions_[5];
-private:
-	void setupLights() {
-		spotLight_.AmbientIntensity = 0.0f;
-		spotLight_.DiffuseIntensity = 0.9f;
-		spotLight_.Color = COLOR_WHITE;
-		spotLight_.Attenuation.Linear = 0.01f;
-		spotLight_.Position = Vector3f(-20.0, 20.0, 5.0f);
-		spotLight_.Direction = Vector3f(1.0f, -1.0f, 0.0f);
-		spotLight_.CutOff = 20.0f;
-
-		dirLight_.AmbientIntensity = 0.1f;
-		dirLight_.Color = COLOR_CYAN;
-		dirLight_.DiffuseIntensity = 0.5f;
-		dirLight_.Direction = Vector3f(1.0f, 0.0f, 0.0f);
-
-		pointLights_[0].DiffuseIntensity = 0.2f;
-		pointLights_[0].Color = COLOR_GREEN;
-		pointLights_[0].Position = Vector3f(0.0f, 1.5f, 5.0f);
-		pointLights_[0].Attenuation.Constant = 0.0f;
-		pointLights_[0].Attenuation.Linear = 0.0f;
-		pointLights_[0].Attenuation.Exp = 0.3f;
-
-		pointLights_[1].DiffuseIntensity = 0.2f;
-		pointLights_[1].Color = COLOR_RED;
-		pointLights_[1].Position = Vector3f(2.0f, 0.0f, 5.0f);
-		pointLights_[1].Attenuation.Constant = 0.0f;
-		pointLights_[1].Attenuation.Linear = 0.0f;
-		pointLights_[1].Attenuation.Exp = 0.3f;
-
-		pointLights_[2].DiffuseIntensity = 0.2f;
-		pointLights_[2].Color = COLOR_BLUE;
-		pointLights_[2].Position = Vector3f(0.0f, 0.0f, 3.0f);
-		pointLights_[2].Attenuation.Constant = 0.0f;
-		pointLights_[2].Attenuation.Linear = 0.0f;
-		pointLights_[2].Attenuation.Exp = 0.3f;
-	}
-
-	void setupBoxPositions() {
-		boxPositions_[0] = Vector3f(0.0f, 0.0f, 5.0f);
-		boxPositions_[1] = Vector3f(6.0f, 1.0f, 10.0f);
-		boxPositions_[2] = Vector3f(-5.0f, -1.0f, 12.0f);
-		boxPositions_[3] = Vector3f(4.0f, 4.0f, 15.0f);
-		boxPositions_[4] = Vector3f(-4.0f, 2.0f, 20.0f);
-	}
-
-	void geometryPass() {
-		dsGeometryPassShader_.enable();
-		gBuffer_.bindForWriting();
-		glDepthMask(GL_TRUE);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glDisable(GL_BLEND);
-
-		Pipeline p;
-		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.setPerspectiveProjection(persProjInfo_);
-		p.rotate(0.0f, scale_, 0.0f);
-
-		for (size_t idx = 0; idx < ARRAY_SIZE_IN_ELEMENTS(boxPositions_); idx++) {
-			p.worldPos(boxPositions_[idx]);
-			dsGeometryPassShader_.setWVP(p.getWVPTransformation());
-			dsGeometryPassShader_.setWorldMatrix(p.getWorldTransformation());
-			box_.render();
-		}
-
-		glDepthMask(GL_FALSE);
-		glDisable(GL_DEPTH_TEST);
-	}
-
-	void beginLightPass() {
-		glEnable(GL_BLEND);
-		glBlendEquation(GL_FUNC_ADD);
-		glBlendFunc(GL_ONE, GL_ONE);
-		gBuffer_.bindForReading();
-		glClear(GL_COLOR_BUFFER_BIT);
-	}
-
-	float CalcPointLightBSphere(PointLight const& light) {
-		float maxChannel = std::max(std::max(light.Color.x, light.Color.y), light.Color.z);
-		return (-light.Attenuation.Linear 
-					+ std::sqrt(light.Attenuation.Linear * light.Attenuation.Linear 
-						- 4 * light.Attenuation.Exp * (light.Attenuation.Exp - 256 * maxChannel * light.DiffuseIntensity)
-					)
-				)
-				/
-				(2 * light.Attenuation.Exp);
-	}
-
-	void pointLightPass() {
-		dsPointLightShader_.enable();
-		dsPointLightShader_.SetEyeWorldPos(pCamera_->getPos());
-
-		Pipeline p;
-		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
-		p.setPerspectiveProjection(persProjInfo_);
-
-		for (size_t idx = 0; idx < ARRAY_SIZE_IN_ELEMENTS(pointLights_); idx++) {
-			dsPointLightShader_.setPointLight(pointLights_[idx]);
-			p.worldPos(pointLights_[idx].Position);
-			float scale = CalcPointLightBSphere(pointLights_[idx]);
-			p.scale(scale, scale, scale);
-			dsPointLightShader_.SetWVP(p.getWVPTransformation());
-			sphere_.render();
-		}
-	}
-
-	void dirLightPass() {
-		dsDirLightPassShader_.enable();
-		dsDirLightPassShader_.SetEyeWorldPos(pCamera_->getPos());
-		Matrix4f wvp;
-		wvp.InitIdentity();
-		dsDirLightPassShader_.SetWVP(wvp);
-		quad_.render();
-	}
-	
+	long long					m_frameTime;
+	long long					m_startTime;
 public:
 	Main() {
-        persProjInfo_.FOV = 60.0f;
-        persProjInfo_.Width = WindowWidth;
-        persProjInfo_.Height = WindowHeight;
-        persProjInfo_.zNear = 1.0f;
-        persProjInfo_.zFar = 100.0f;
+		directionalLight_.Color = Vector3f(1.0f, 1.0f, 1.0f);
+		directionalLight_.AmbientIntensity = 0.55f;
+		directionalLight_.DiffuseIntensity = 0.9f;
+		directionalLight_.Direction = Vector3f(1.0f, 0.0, 0.0);
 
-		setupLights();
-		setupBoxPositions();
+		persProjInfo_.FOV = 60.0f;
+		persProjInfo_.Height = WindowHeight;
+		persProjInfo_.Width = WindowWidth;
+		persProjInfo_.zNear = 1.0f;
+		persProjInfo_.zFar = 100.0f;
+
+		position_ = Vector3f(0.0f, 0.0f, 6.0f);
+		m_frameTime = m_startTime = GetTickCount();
+	}
+
+	float GetRunningTime()
+	{
+		float RunningTime = (float)((double)GetTickCount() - (double)m_startTime) / 1000.0f;
+		return RunningTime;
 	}
 public: // == Main ==
     bool init(){
-		if (!gBuffer_.init(WindowWidth, WindowHeight))
+		Vector3f pos(0.0f, 3.0f, -1.0f);
+		Vector3f target(0.0f, 0.0f, 1.0f);
+		Vector3f up(0.0f, 1.0f, 0.0f);
+		pCamera_ = std::make_unique< Camera >(WindowWidth, WindowHeight, pos, target, up);
+
+		if (!shader_.init())
 			return false;
 
-		pCamera_ = std::make_unique< Camera >(WindowWidth, WindowHeight);
+		shader_.enable();
+		shader_.SetColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
+		shader_.SetDirectionalLight(directionalLight_);
+		shader_.SetMatSpecularIntensity(0.0f);
+		shader_.SetMatSpecularPower(0.0f);
 
-		if (!dsGeometryPassShader_.init()) {
-			std::cerr << "Failed to setup DSGeometryPass\n";
-			return false;
-		}
-
-		dsGeometryPassShader_.enable();
-		dsGeometryPassShader_.setColorTextureUnit(COLOR_TEXTURE_UNIT_INDEX);
-		
-		if (!dsPointLightShader_.init()) {
-			std::cerr << "Failed to initialize point lights" << std::endl;
-			return false;
-		}
-
-		dsPointLightShader_.enable();
-		dsPointLightShader_.SetPositionTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_POSITION);
-		dsPointLightShader_.SetColorTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_DIFFUSE);
-		dsPointLightShader_.SetNormalTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_NORMAL);
-		dsPointLightShader_.SetScreenSize(WindowWidth, WindowHeight);
-
-		if (!dsDirLightPassShader_.init()) {
-			std::cerr << "Failed to setup dir light" << std::endl;
+		if (!mesh_.LoadMesh("../Content/boblampclean.md5mesh")) {
+			std::cerr << "Failed to load mesh" << std::endl;
 			return false;
 		}
 
-		dsDirLightPassShader_.enable();
-		dsDirLightPassShader_.SetPositionTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_POSITION);
-		dsDirLightPassShader_.SetColorTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_DIFFUSE);
-		dsDirLightPassShader_.SetNormalTextureUnit(GBuffer::GBUFFER_TEXTURE_TYPE_NORMAL);
-		dsDirLightPassShader_.SetDirectionalLight( dirLight_ );
-		dsDirLightPassShader_.SetScreenSize(WindowWidth, WindowHeight);
-
-		if (!quad_.loadMesh("../Content/quad.obj"))
-			return false;
-
-		if (!box_.loadMesh("../Content/box.obj"))
-			return false;
-
-		if (!sphere_.loadMesh("../Content/sphere.obj"))
-			return false;
 
         return true;
     }
@@ -237,12 +100,29 @@ public:// == CallbackInterface ==
 	
 
     virtual void renderSceneCB() override{
-        scale_ += 0.05f;
-        pCamera_->onRender();
-        geometryPass();
-		beginLightPass();
-		pointLightPass();
-		dirLightPass();
+		pCamera_->onRender();
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		shader_.enable();
+		std::vector< Matrix4f > transforms;
+		float runningTime = GetRunningTime();
+		mesh_.BoneTransform(runningTime, transforms);
+
+		for (size_t idx = 0; idx < transforms.size(); idx++) {
+			shader_.SetBoneTransform(idx, transforms[idx]);
+		}
+
+		shader_.SetEyeWorldPos(pCamera_->getPos());
+		Pipeline p;
+		p.setCamera(pCamera_->getPos(), pCamera_->getTarget(), pCamera_->getUp());
+		p.setPerspectiveProjection(persProjInfo_);
+		p.scale(0.1f, 0.1f, 0.1f);
+
+		Vector3f pos(position_);
+		p.worldPos(pos);
+		p.rotate(270.0f, 180.0f, 0.0f);
+		shader_.SetWVP(p.getWVPTransformation());
+		shader_.SetWorldMatrix(p.getWorldTransformation());
+		mesh_.Render();
 
 		glutSwapBuffers();
     }

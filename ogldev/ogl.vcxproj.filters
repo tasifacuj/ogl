@@ -102,6 +102,12 @@
     <ClCompile Include="shaders\DSPointLightShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="import\SkinnedMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders\T38SkinnedShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BillboardList.hpp">
@@ -206,6 +212,12 @@
     <ClInclude Include="shaders\DSPointLightShader.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="import\SkinnedMesh.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="shaders\T38SkinnedShader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\lighting_vs.glsl" />
@@ -220,6 +232,8 @@
     <None Include="shaders\t36_dir_light_pas_fs.glsl" />
     <None Include="shaders\t36_light_pass_vs.glsl" />
     <None Include="shaders\t36_point_light_pass_fs.glsl" />
+    <None Include="shaders\t38_skinning_vs.glsl" />
+    <None Include="shaders\t38_skinning_fs.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\t36_geometry_pass_vs.glsl" />

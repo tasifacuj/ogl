@@ -135,6 +135,7 @@
     <ClCompile Include="CubeMapTexture.cpp" />
     <ClCompile Include="GLUTBackend.cpp" />
     <ClCompile Include="import\BasicMesh.cpp" />
+    <ClCompile Include="import\SkinnedMesh.cpp" />
     <ClCompile Include="LightTechnique.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math_3d.cpp" />
@@ -147,6 +148,7 @@
     <ClCompile Include="shaders\LightingShader.cpp" />
     <ClCompile Include="shaders\PickingShader.cpp" />
     <ClCompile Include="shaders\SimpleColorShader.cpp" />
+    <ClCompile Include="shaders\T38SkinnedShader.cpp" />
     <ClCompile Include="textures\PickingTexture.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PSUpdateShader.cpp" />
@@ -169,6 +171,7 @@
     <ClInclude Include="EngineCommon.hpp" />
     <ClInclude Include="GlutBackEnd.hpp" />
     <ClInclude Include="import\BasicMesh.hpp" />
+    <ClInclude Include="import\SkinnedMesh.hpp" />
     <ClInclude Include="interface\RenderCallbackInterface.hpp" />
     <ClInclude Include="LightTechnique.hpp" />
     <ClInclude Include="math_3d.h" />
@@ -182,6 +185,7 @@
     <ClInclude Include="shaders\LightingShader.hpp" />
     <ClInclude Include="shaders\PickingShader.hpp" />
     <ClInclude Include="shaders\SimpleColorShader.hpp" />
+    <ClInclude Include="shaders\T38SkinnedShader.hpp" />
     <ClInclude Include="textures\PickingTexture.hpp" />
     <ClInclude Include="Pipeline.hpp" />
     <ClInclude Include="PSUpdateShader.hpp" />
@@ -207,6 +211,8 @@
     <None Include="shaders\t36_dir_light_pas_fs.glsl" />
     <None Include="shaders\t36_light_pass_vs.glsl" />
     <None Include="shaders\t36_point_light_pass_fs.glsl" />
+    <None Include="shaders\t38_skinning_fs.glsl" />
+    <None Include="shaders\t38_skinning_vs.glsl" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="shaders\t36_geometry_pass_vs.glsl" />
